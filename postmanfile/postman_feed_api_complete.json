@@ -1,0 +1,526 @@
+{
+	"info": {
+		"_postman_id": "feed-api-collection-2026",
+		"name": "Feed API - Complete Collection",
+		"description": "Complete Feed API endpoints with baseRevenue, serviceFee, and all food-related APIs",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Feed API",
+			"item": [
+				{
+					"name": "Get Feed (All Foods)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/feed",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "feed"]
+						},
+						"description": "Get all available foods in the feed with baseRevenue, serviceFee, and pricing details"
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/feed",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "feed"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"success\": true,\n  \"meta\": {\n    \"total\": 6,\n    \"page\": 1,\n    \"limit\": 20\n  },\n  \"data\": [\n    {\n      \"id\": \"69a5f1a89c6462ba8da04f28\",\n      \"name\": \"Ultimate Pepperoni Cheese Stretch\",\n      \"image\": \"http://res.cloudinary.com/dbglkfj2z/image/upload/v1772482942/uploads/ldwzdbjuhjvkkqwxncix.png\",\n      \"productDescription\": \"Gooey melted cheese stretching from fresh pepperoni pizza slice! 🍕🔥\",\n      \"baseRevenue\": 5.99,\n      \"price\": 7.24,\n      \"rating\": 0,\n      \"category\": \"PizzaBot\",\n      \"serviceFee\": 1.25,\n      \"provider\": \"johovaw235\",\n      \"providerID\": \"69a4837b7aed271fc59f2ff8\",\n      \"inStock\": true\n    }\n  ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Feed (Filter by Category)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/feed?categoryName=Pizza",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "feed"],
+							"query": [
+								{
+									"key": "categoryName",
+									"value": "Pizza",
+									"description": "Filter by category name"
+								}
+							]
+						},
+						"description": "Get foods filtered by category name"
+					}
+				},
+				{
+					"name": "Get Feed (Filter by Provider)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/feed?providerId={{providerId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "feed"],
+							"query": [
+								{
+									"key": "providerId",
+									"value": "{{providerId}}",
+									"description": "Filter by provider ID"
+								}
+							]
+						},
+						"description": "Get foods from a specific provider"
+					}
+				},
+				{
+					"name": "Get Feed (Pagination)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/feed?page=1&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "feed"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Items per page"
+								}
+							]
+						},
+						"description": "Get paginated feed results"
+					}
+				}
+			]
+		},
+		{
+			"name": "Cart API",
+			"item": [
+				{
+					"name": "Get Cart",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/cart",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "cart"]
+						},
+						"description": "Get user's cart with baseRevenue and serviceFee"
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{customerToken}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/cart",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "cart"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"_id\": \"697fd0a7eb2261c1a238328d\",\n    \"userId\": \"697012afe0d562ec1527056b\",\n    \"items\": [\n      {\n        \"foodId\": {\n          \"_id\": \"697fd0009cc1beb831aec75f\",\n          \"image\": \"https://res.cloudinary.com/demo/image/upload/v123456/burger.jpg\",\n          \"title\": \"Gourmet Beef Burger\",\n          \"baseRevenue\": 5.99,\n          \"finalPriceTag\": 7.24,\n          \"serviceFee\": 1.25,\n          \"providerId\": \"69a4837b7aed271fc59f2ff8\"\n        },\n        \"quantity\": 1,\n        \"price\": 7.24\n      }\n    ],\n    \"subtotal\": 7.24\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Add to Cart",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"foodId\": \"{{foodId}}\",\n  \"quantity\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/cart/add",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "cart", "add"]
+						},
+						"description": "Add item to cart"
+					}
+				},
+				{
+					"name": "Update Cart Item",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"foodId\": \"{{foodId}}\",\n  \"quantity\": 2\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/cart/update",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "cart", "update"]
+						},
+						"description": "Update item quantity in cart"
+					}
+				},
+				{
+					"name": "Remove from Cart",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/cart/remove/{{foodId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "cart", "remove", "{{foodId}}"]
+						},
+						"description": "Remove item from cart"
+					}
+				}
+			]
+		},
+		{
+			"name": "Payment API",
+			"item": [
+				{
+					"name": "Create Payment Intent",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"providerId\": \"{{providerId}}\",\n  \"items\": [\n    {\n      \"foodId\": \"{{foodId}}\",\n      \"quantity\": 1\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stripe/create-payment-intent",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "stripe", "create-payment-intent"]
+						},
+						"description": "Create payment intent with correct breakdown:\n- Restaurant gets: (baseRevenue - $0.50) + serviceFee\n- Admin gets: $0.50 + tax"
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{customerToken}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"providerId\": \"69a4837b7aed271fc59f2ff8\",\n  \"items\": [\n    {\n      \"foodId\": \"697fd0009cc1beb831aec75f\",\n      \"quantity\": 1\n    }\n  ]\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/stripe/create-payment-intent",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "stripe", "create-payment-intent"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"success\": true,\n  \"message\": \"Payment intent created successfully\",\n  \"data\": {\n    \"clientSecret\": \"pi_xxx_secret_xxx\",\n    \"paymentIntentId\": \"pi_xxx\",\n    \"amount\": 8.33,\n    \"breakdown\": {\n      \"subtotal\": 7.24,\n      \"platformFee\": 0.50,\n      \"stateTax\": 1.09,\n      \"total\": 8.33,\n      \"vendorAmount\": 6.74,\n      \"state\": \"DHK\",\n      \"items\": [\n        {\n          \"foodId\": \"697fd0009cc1beb831aec75f\",\n          \"name\": \"Gourmet Beef Burger\",\n          \"price\": 7.24,\n          \"baseRevenue\": 5.99,\n          \"serviceFee\": 1.25,\n          \"quantity\": 1,\n          \"itemTotal\": 7.24,\n          \"platformFee\": 0.50\n        }\n      ]\n    }\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Payment Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stripe/payment-status/{{paymentIntentId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "stripe", "payment-status", "{{paymentIntentId}}"]
+						},
+						"description": "Get payment status by payment intent ID"
+					}
+				}
+			]
+		},
+		{
+			"name": "State Tax API",
+			"item": [
+				{
+					"name": "Get Tax by State Code",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/states/tax?state=DHK",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "states", "tax"],
+							"query": [
+								{
+									"key": "state",
+									"value": "DHK",
+									"description": "State code (DHK, CA, NY, TX, etc.)"
+								}
+							]
+						},
+						"description": "Get tax rate by state code"
+					},
+					"response": [
+						{
+							"name": "Dhaka Tax",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/states/tax?state=DHK",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "states", "tax"],
+									"query": [
+										{
+											"key": "state",
+											"value": "DHK"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"name\": \"Dhaka\",\n    \"code\": \"DHK\",\n    \"tax\": 15,\n    \"country\": \"BANGLADESH\"\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Tax by State Name",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/states/tax?state=California",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "states", "tax"],
+							"query": [
+								{
+									"key": "state",
+									"value": "California",
+									"description": "State name (case-insensitive)"
+								}
+							]
+						},
+						"description": "Get tax rate by state name"
+					}
+				},
+				{
+					"name": "Get All States",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/states",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "states"]
+						},
+						"description": "Get all available states"
+					}
+				}
+			]
+		},
+		{
+			"name": "Location API",
+			"item": [
+				{
+					"name": "Get City by Coordinates",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/location/city?lat=37.7749&lng=-122.4194",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "location", "city"],
+							"query": [
+								{
+									"key": "lat",
+									"value": "37.7749",
+									"description": "Latitude"
+								},
+								{
+									"key": "lng",
+									"value": "-122.4194",
+									"description": "Longitude"
+								}
+							]
+						},
+						"description": "Get city name and state from coordinates"
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/location/city?lat=37.7749&lng=-122.4194",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "location", "city"],
+									"query": [
+										{
+											"key": "lat",
+											"value": "37.7749"
+										},
+										{
+											"key": "lng",
+											"value": "-122.4194"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"city\": \"San Francisco\",\n    \"state\": \"CA\",\n    \"country\": \"US\",\n    \"county\": \"San Francisco County\",\n    \"zipCode\": \"94102\"\n  }\n}"
+						}
+					]
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000",
+			"type": "string"
+		},
+		{
+			"key": "customerToken",
+			"value": "your_customer_jwt_token_here",
+			"type": "string"
+		},
+		{
+			"key": "providerToken",
+			"value": "your_provider_jwt_token_here",
+			"type": "string"
+		},
+		{
+			"key": "foodId",
+			"value": "697fd0009cc1beb831aec75f",
+			"type": "string"
+		},
+		{
+			"key": "providerId",
+			"value": "69a4837b7aed271fc59f2ff8",
+			"type": "string"
+		},
+		{
+			"key": "paymentIntentId",
+			"value": "pi_xxx",
+			"type": "string"
+		}
+	]
+}

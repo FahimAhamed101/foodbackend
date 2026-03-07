@@ -1,0 +1,418 @@
+{
+  "info": {
+    "name": "Food Image Upload - Form-Data Support",
+    "_postman_id": "food-image-upload-001",
+    "description": "Complete collection for creating and updating foods with image upload support (JSON URL + Form-Data File)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoryId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "foodId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Provider Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Save token",
+              "if (pm.response.code === 200) {",
+              "    const response = pm.response.json();",
+              "    if (response.data && response.data.session) {",
+              "        pm.collectionVariables.set('token', response.data.session.accessToken);",
+              "        console.log('✅ Token saved:', response.data.session.accessToken);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"provider@example.com\",\n  \"password\": \"YourPassword123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "2. Create Category",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Save category ID",
+              "if (pm.response.code === 201) {",
+              "    const response = pm.response.json();",
+              "    if (response.data && response.data._id) {",
+              "        pm.collectionVariables.set('categoryId', response.data._id);",
+              "        console.log('✅ Category ID saved:', response.data._id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"categoryName\": \"Burgers\",\n  \"categoryDescription\": \"Delicious burgers\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/categories",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "categories"]
+        }
+      }
+    },
+    {
+      "name": "3. Create Food - JSON (Image URL)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Save food ID",
+              "if (pm.response.code === 201) {",
+              "    const response = pm.response.json();",
+              "    if (response.data && response.data._id) {",
+              "        pm.collectionVariables.set('foodId', response.data._id);",
+              "        console.log('✅ Food ID saved:', response.data._id);",
+              "        console.log('✅ Image URL:', response.data.image);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"categoryId\": \"{{categoryId}}\",\n  \"image\": \"https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg\",\n  \"title\": \"Classic Cheese Burger\",\n  \"foodAvailability\": true,\n  \"calories\": 450,\n  \"productDescription\": \"Delicious cheese burger with fresh ingredients, lettuce, tomato, and special sauce\",\n  \"baseRevenue\": 8.99,\n  \"serviceFee\": 1.00,\n  \"foodStatus\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/foods",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "foods"]
+        }
+      }
+    },
+    {
+      "name": "4. Create Food - Form-Data (File Upload) ✨",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Save food ID",
+              "if (pm.response.code === 201) {",
+              "    const response = pm.response.json();",
+              "    if (response.data && response.data._id) {",
+              "        pm.collectionVariables.set('foodId', response.data._id);",
+              "        console.log('✅ Food ID saved:', response.data._id);",
+              "        console.log('✅ Uploaded Image URL:', response.data.image);",
+              "        console.log('✅ Image uploaded to Cloudinary successfully!');",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "categoryId",
+              "value": "{{categoryId}}",
+              "type": "text"
+            },
+            {
+              "key": "image",
+              "type": "file",
+              "src": []
+            },
+            {
+              "key": "title",
+              "value": "Bacon Cheese Burger",
+              "type": "text"
+            },
+            {
+              "key": "foodAvailability",
+              "value": "true",
+              "type": "text"
+            },
+            {
+              "key": "calories",
+              "value": "550",
+              "type": "text"
+            },
+            {
+              "key": "productDescription",
+              "value": "Juicy burger with crispy bacon and melted cheese",
+              "type": "text"
+            },
+            {
+              "key": "baseRevenue",
+              "value": "10.99",
+              "type": "text"
+            },
+            {
+              "key": "serviceFee",
+              "value": "1.50",
+              "type": "text"
+            },
+            {
+              "key": "foodStatus",
+              "value": "true",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/foods",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "foods"]
+        }
+      }
+    },
+    {
+      "name": "5. Get All Foods",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/foods?page=1&limit=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "foods"],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "6. Get Food by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/foods/{{foodId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "foods", "{{foodId}}"]
+        }
+      }
+    },
+    {
+      "name": "7. Update Food - JSON (Image URL)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    const response = pm.response.json();",
+              "    console.log('✅ Food updated successfully');",
+              "    console.log('✅ New Image URL:', response.data.image);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"image\": \"https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg\",\n  \"title\": \"Updated Classic Burger\",\n  \"baseRevenue\": 9.99,\n  \"productDescription\": \"Updated description with new ingredients\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/foods/{{foodId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "foods", "{{foodId}}"]
+        }
+      }
+    },
+    {
+      "name": "8. Update Food - Form-Data (File Upload) ✨",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    const response = pm.response.json();",
+              "    console.log('✅ Food updated with new image');",
+              "    console.log('✅ New Uploaded Image URL:', response.data.image);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "image",
+              "type": "file",
+              "src": []
+            },
+            {
+              "key": "title",
+              "value": "Premium Bacon Burger",
+              "type": "text"
+            },
+            {
+              "key": "baseRevenue",
+              "value": "12.99",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/foods/{{foodId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "foods", "{{foodId}}"]
+        }
+      }
+    },
+    {
+      "name": "9. Delete Food",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/foods/{{foodId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "foods", "{{foodId}}"]
+        }
+      }
+    },
+    {
+      "name": "10. Search Foods (Public)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/foods/search?name=burger&page=1&limit=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "foods", "search"],
+          "query": [
+            {
+              "key": "name",
+              "value": "burger"
+            },
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,630 @@
+{
+  "info": {
+    "name": "EMDR - Stripe Payment (Complete Response Save)",
+    "description": "Stripe payment integration with COMPLETE response data saving",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api/v1"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "userEmail",
+      "value": ""
+    },
+    {
+      "key": "userRole",
+      "value": ""
+    },
+    {
+      "key": "publishableKey",
+      "value": ""
+    },
+    {
+      "key": "clientSecret",
+      "value": ""
+    },
+    {
+      "key": "paymentIntentId",
+      "value": ""
+    },
+    {
+      "key": "paymentAmount",
+      "value": ""
+    },
+    {
+      "key": "paymentBreakdown",
+      "value": ""
+    },
+    {
+      "key": "orderId",
+      "value": ""
+    },
+    {
+      "key": "orderData",
+      "value": ""
+    },
+    {
+      "key": "paymentStatus",
+      "value": ""
+    },
+    {
+      "key": "refundId",
+      "value": ""
+    },
+    {
+      "key": "lastResponse",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "console.log('\\n' + '='.repeat(60));",
+          "console.log('🚀 REQUEST:', pm.request.method, pm.request.name);",
+          "console.log('📍 URL:', pm.request.url.toString());",
+          "console.log('📅 Time:', new Date().toLocaleString());",
+          "console.log('='.repeat(60));"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Save complete response",
+          "if (pm.response.code >= 200 && pm.response.code < 300) {",
+          "    try {",
+          "        const response = pm.response.json();",
+          "        pm.collectionVariables.set('lastResponse', JSON.stringify(response, null, 2));",
+          "    } catch(e) {}",
+          "}",
+          "",
+          "// Collection level tests",
+          "pm.test('✅ Response time < 5s', () => {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "pm.test('✅ Valid JSON response', () => {",
+          "    pm.response.to.have.jsonBody();",
+          "});",
+          "",
+          "console.log('\\n📊 RESPONSE:', pm.response.code, pm.response.status);",
+          "console.log('⏱️  Time:', pm.response.responseTime + 'ms');",
+          "console.log('='.repeat(60) + '\\n');"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "📁 Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const res = pm.response.json();",
+                  "    ",
+                  "    if (res.success && res.data) {",
+                  "        // Save ALL login data",
+                  "        pm.collectionVariables.set('token', res.data.token);",
+                  "        ",
+                  "        if (res.data.user) {",
+                  "            pm.collectionVariables.set('userId', res.data.user._id || res.data.user.id);",
+                  "            pm.collectionVariables.set('userEmail', res.data.user.email);",
+                  "            pm.collectionVariables.set('userRole', res.data.user.role);",
+                  "        }",
+                  "        ",
+                  "        console.log('\\n✅ LOGIN SUCCESSFUL');",
+                  "        console.log('━'.repeat(60));",
+                  "        console.log('🔑 Token:', res.data.token.substring(0, 30) + '...');",
+                  "        console.log('👤 User ID:', pm.collectionVariables.get('userId'));",
+                  "        console.log('📧 Email:', pm.collectionVariables.get('userEmail'));",
+                  "        console.log('🎭 Role:', pm.collectionVariables.get('userRole'));",
+                  "        console.log('━'.repeat(60));",
+                  "    }",
+                  "}",
+                  "",
+                  "pm.test('✅ Login successful', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "    pm.expect(res.data.token).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📁 Stripe Payment",
+      "item": [
+        {
+          "name": "1. Get Stripe Config",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const res = pm.response.json();",
+                  "    ",
+                  "    if (res.success && res.data) {",
+                  "        pm.collectionVariables.set('publishableKey', res.data.publishableKey);",
+                  "        ",
+                  "        console.log('\\n✅ STRIPE CONFIG RETRIEVED');",
+                  "        console.log('━'.repeat(60));",
+                  "        console.log('🔑 Publishable Key:', res.data.publishableKey);",
+                  "        console.log('━'.repeat(60));",
+                  "    }",
+                  "}",
+                  "",
+                  "pm.test('✅ Config retrieved', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.publishableKey).to.include('pk_test_');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stripe/config",
+              "host": ["{{baseUrl}}"],
+              "path": ["stripe", "config"]
+            }
+          }
+        },
+        {
+          "name": "2. Create Payment Intent",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const res = pm.response.json();",
+                  "    ",
+                  "    if (res.success && res.data) {",
+                  "        // Save ALL payment intent data",
+                  "        pm.collectionVariables.set('clientSecret', res.data.clientSecret);",
+                  "        pm.collectionVariables.set('paymentIntentId', res.data.paymentIntentId);",
+                  "        pm.collectionVariables.set('paymentAmount', res.data.amount);",
+                  "        pm.collectionVariables.set('paymentBreakdown', JSON.stringify(res.data.breakdown));",
+                  "        ",
+                  "        console.log('\\n✅ PAYMENT INTENT CREATED');",
+                  "        console.log('━'.repeat(60));",
+                  "        console.log('🆔 Payment Intent ID:', res.data.paymentIntentId);",
+                  "        console.log('🔑 Client Secret:', res.data.clientSecret.substring(0, 40) + '...');",
+                  "        console.log('💰 Total Amount: $' + res.data.amount.toFixed(2));",
+                  "        ",
+                  "        if (res.data.breakdown) {",
+                  "            const b = res.data.breakdown;",
+                  "            console.log('\\n📊 PRICE BREAKDOWN:');",
+                  "            console.log('   Subtotal:      $' + b.subtotal.toFixed(2));",
+                  "            console.log('   Platform Fee:  $' + b.platformFee.toFixed(2) + ' (' + (b.state === 'CA' ? '10%' : '7%') + ')');",
+                  "            console.log('   State Tax:     $' + b.stateTax.toFixed(2));",
+                  "            console.log('   ─────────────────────────');",
+                  "            console.log('   TOTAL:         $' + b.total.toFixed(2));",
+                  "            console.log('   Vendor Gets:   $' + b.vendorAmount.toFixed(2));",
+                  "            console.log('   State:         ' + b.state);",
+                  "            ",
+                  "            if (b.items && b.items.length > 0) {",
+                  "                console.log('\\n📦 ITEMS:');",
+                  "                b.items.forEach((item, i) => {",
+                  "                    console.log('   ' + (i+1) + '. ' + item.name);",
+                  "                    console.log('      Price: $' + item.price + ' × ' + item.quantity + ' = $' + item.itemTotal.toFixed(2));",
+                  "                    console.log('      Platform Fee: $' + item.platformFee.toFixed(2));",
+                  "                });",
+                  "            }",
+                  "        }",
+                  "        console.log('━'.repeat(60));",
+                  "    }",
+                  "}",
+                  "",
+                  "pm.test('✅ Payment Intent created', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.clientSecret).to.exist;",
+                  "    pm.expect(res.data.amount).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"providerId\": \"65f1234567890abcdef12345\",\n  \"items\": [\n    {\n      \"foodId\": \"65f9876543210fedcba98765\",\n      \"quantity\": 2\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/stripe/create-payment-intent",
+              "host": ["{{baseUrl}}"],
+              "path": ["stripe", "create-payment-intent"]
+            }
+          }
+        },
+        {
+          "name": "3. Get Payment Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const res = pm.response.json();",
+                  "    ",
+                  "    if (res.success && res.data) {",
+                  "        // Save payment status data",
+                  "        pm.collectionVariables.set('paymentStatus', res.data.status);",
+                  "        ",
+                  "        if (res.data.orderId) {",
+                  "            pm.collectionVariables.set('orderId', res.data.orderId);",
+                  "        }",
+                  "        ",
+                  "        console.log('\\n✅ PAYMENT STATUS');",
+                  "        console.log('━'.repeat(60));",
+                  "        console.log('📊 Status:', res.data.status);",
+                  "        console.log('💰 Amount: $' + res.data.amount.toFixed(2));",
+                  "        ",
+                  "        if (res.data.orderId) {",
+                  "            console.log('\\n📦 ORDER CREATED:');",
+                  "            console.log('   Order ID:', res.data.orderId);",
+                  "            console.log('   Order Status:', res.data.orderStatus);",
+                  "            console.log('   Payment Status:', res.data.paymentStatus);",
+                  "        } else {",
+                  "            console.log('\\n⚠️  Order not created yet (webhook pending)');",
+                  "        }",
+                  "        console.log('━'.repeat(60));",
+                  "    }",
+                  "}",
+                  "",
+                  "pm.test('✅ Payment status retrieved', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.status).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/stripe/payment-status/{{paymentIntentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["stripe", "payment-status", "{{paymentIntentId}}"]
+            }
+          }
+        },
+        {
+          "name": "4. Test Webhook (Manual)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const res = pm.response.json();",
+                  "    ",
+                  "    console.log('\\n✅ WEBHOOK RECEIVED');",
+                  "    console.log('━'.repeat(60));",
+                  "    console.log('📨 Event Type:', pm.request.body.raw ? JSON.parse(pm.request.body.raw).type : 'N/A');",
+                  "    console.log('✅ Webhook processed successfully');",
+                  "    console.log('━'.repeat(60));",
+                  "}",
+                  "",
+                  "pm.test('✅ Webhook accepted', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.received).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-test-webhook",
+                "value": "true",
+                "description": "Bypass signature verification for testing"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"evt_test_webhook\",\n  \"type\": \"payment_intent.succeeded\",\n  \"data\": {\n    \"object\": {\n      \"id\": \"{{paymentIntentId}}\",\n      \"amount\": 4687,\n      \"status\": \"succeeded\",\n      \"metadata\": {\n        \"customerId\": \"{{userId}}\",\n        \"providerId\": \"65f1234567890abcdef12345\",\n        \"state\": \"CA\",\n        \"items\": \"[{\\\"foodId\\\":\\\"65f9876543210fedcba98765\\\",\\\"quantity\\\":2}]\"\n      }\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/stripe/webhook",
+              "host": ["{{baseUrl}}"],
+              "path": ["stripe", "webhook"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📁 Order Management",
+      "item": [
+        {
+          "name": "Get Order Details",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const res = pm.response.json();",
+                  "    ",
+                  "    if (res.success && res.data) {",
+                  "        // Save COMPLETE order data",
+                  "        pm.collectionVariables.set('orderData', JSON.stringify(res.data));",
+                  "        ",
+                  "        const order = res.data;",
+                  "        console.log('\\n✅ ORDER DETAILS');",
+                  "        console.log('━'.repeat(60));",
+                  "        console.log('🆔 Order ID:', order.orderId);",
+                  "        console.log('📦 Status:', order.status);",
+                  "        console.log('💳 Payment Status:', order.paymentStatus);",
+                  "        console.log('💰 Payment Method:', order.paymentMethod);",
+                  "        ",
+                  "        console.log('\\n💵 PRICING:');",
+                  "        console.log('   Subtotal:      $' + order.subtotal.toFixed(2));",
+                  "        console.log('   Platform Fee:  $' + order.platformFee.toFixed(2));",
+                  "        console.log('   State Tax:     $' + order.stateTax.toFixed(2));",
+                  "        console.log('   ─────────────────────────');",
+                  "        console.log('   TOTAL:         $' + order.totalPrice.toFixed(2));",
+                  "        console.log('   Vendor Gets:   $' + order.vendorAmount.toFixed(2));",
+                  "        ",
+                  "        console.log('\\n📍 LOCATION:');",
+                  "        console.log('   State:', order.state);",
+                  "        ",
+                  "        console.log('\\n🔗 STRIPE:');",
+                  "        console.log('   Payment Intent:', order.stripePaymentIntentId);",
+                  "        ",
+                  "        if (order.items && order.items.length > 0) {",
+                  "            console.log('\\n📦 ITEMS (' + order.items.length + '):');",
+                  "            order.items.forEach((item, i) => {",
+                  "                console.log('   ' + (i+1) + '. Quantity: ' + item.quantity + ' × $' + item.price.toFixed(2));",
+                  "            });",
+                  "        }",
+                  "        ",
+                  "        console.log('\\n📅 CREATED:', new Date(order.createdAt).toLocaleString());",
+                  "        console.log('━'.repeat(60));",
+                  "    }",
+                  "}",
+                  "",
+                  "pm.test('✅ Order retrieved', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.orderId).to.exist;",
+                  "});",
+                  "",
+                  "pm.test('✅ Order is paid', () => {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.paymentStatus).to.equal('paid');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{orderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "{{orderId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Refund",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const res = pm.response.json();",
+                  "    ",
+                  "    if (res.success && res.data) {",
+                  "        pm.collectionVariables.set('refundId', res.data.refundId);",
+                  "        ",
+                  "        console.log('\\n✅ REFUND CREATED');",
+                  "        console.log('━'.repeat(60));",
+                  "        console.log('🆔 Refund ID:', res.data.refundId);",
+                  "        console.log('💰 Amount: $' + res.data.amount.toFixed(2));",
+                  "        console.log('📊 Status:', res.data.status);",
+                  "        console.log('━'.repeat(60));",
+                  "    }",
+                  "}",
+                  "",
+                  "pm.test('✅ Refund created', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.data.refundId).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"reason\": \"Customer requested refund\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/stripe/refund",
+              "host": ["{{baseUrl}}"],
+              "path": ["stripe", "refund"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📁 View Saved Data",
+      "item": [
+        {
+          "name": "View All Variables",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "console.log('\\n' + '═'.repeat(60));",
+                  "console.log('📊 ALL SAVED VARIABLES');",
+                  "console.log('═'.repeat(60));",
+                  "",
+                  "console.log('\\n🔐 AUTHENTICATION:');",
+                  "console.log('   Token:', pm.collectionVariables.get('token') ? pm.collectionVariables.get('token').substring(0, 30) + '...' : 'Not set');",
+                  "console.log('   User ID:', pm.collectionVariables.get('userId') || 'Not set');",
+                  "console.log('   Email:', pm.collectionVariables.get('userEmail') || 'Not set');",
+                  "console.log('   Role:', pm.collectionVariables.get('userRole') || 'Not set');",
+                  "",
+                  "console.log('\\n🔑 STRIPE CONFIG:');",
+                  "console.log('   Publishable Key:', pm.collectionVariables.get('publishableKey') || 'Not set');",
+                  "",
+                  "console.log('\\n💳 PAYMENT INTENT:');",
+                  "console.log('   Payment Intent ID:', pm.collectionVariables.get('paymentIntentId') || 'Not set');",
+                  "console.log('   Client Secret:', pm.collectionVariables.get('clientSecret') ? pm.collectionVariables.get('clientSecret').substring(0, 40) + '...' : 'Not set');",
+                  "console.log('   Amount:', pm.collectionVariables.get('paymentAmount') ? '$' + pm.collectionVariables.get('paymentAmount') : 'Not set');",
+                  "console.log('   Status:', pm.collectionVariables.get('paymentStatus') || 'Not set');",
+                  "",
+                  "console.log('\\n📦 ORDER:');",
+                  "console.log('   Order ID:', pm.collectionVariables.get('orderId') || 'Not set');",
+                  "",
+                  "console.log('\\n💰 REFUND:');",
+                  "console.log('   Refund ID:', pm.collectionVariables.get('refundId') || 'Not set');",
+                  "",
+                  "const breakdown = pm.collectionVariables.get('paymentBreakdown');",
+                  "if (breakdown) {",
+                  "    try {",
+                  "        const b = JSON.parse(breakdown);",
+                  "        console.log('\\n📊 PRICE BREAKDOWN:');",
+                  "        console.log('   Subtotal: $' + b.subtotal.toFixed(2));",
+                  "        console.log('   Platform Fee: $' + b.platformFee.toFixed(2));",
+                  "        console.log('   State Tax: $' + b.stateTax.toFixed(2));",
+                  "        console.log('   Total: $' + b.total.toFixed(2));",
+                  "        console.log('   Vendor Amount: $' + b.vendorAmount.toFixed(2));",
+                  "        console.log('   State: ' + b.state);",
+                  "    } catch(e) {}",
+                  "}",
+                  "",
+                  "const orderData = pm.collectionVariables.get('orderData');",
+                  "if (orderData) {",
+                  "    try {",
+                  "        const order = JSON.parse(orderData);",
+                  "        console.log('\\n📦 COMPLETE ORDER DATA:');",
+                  "        console.log('   Order ID:', order.orderId);",
+                  "        console.log('   Status:', order.status);",
+                  "        console.log('   Payment Status:', order.paymentStatus);",
+                  "        console.log('   Total: $' + order.totalPrice.toFixed(2));",
+                  "        console.log('   Items:', order.items.length);",
+                  "    } catch(e) {}",
+                  "}",
+                  "",
+                  "console.log('\\n' + '═'.repeat(60));",
+                  "",
+                  "pm.test('✅ Variables displayed', () => {",
+                  "    pm.expect(true).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

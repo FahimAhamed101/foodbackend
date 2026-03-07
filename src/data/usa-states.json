@@ -1,0 +1,314 @@
+[
+    {
+        "name": "Alabama",
+        "code": "AL",
+        "country": "USA",
+        "Tax": "6"
+    },
+    {
+        "name": "Alaska",
+        "code": "AK",
+        "country": "USA",
+        "Tax": "2"
+    },
+    {
+        "name": "Arizona",
+        "code": "AZ",
+        "country": "USA",
+        "Tax": "7"
+    },
+    {
+        "name": "Arkansas",
+        "code": "AR",
+        "country": "USA",
+        "Tax": "5"
+    },
+    {
+        "name": "California",
+        "code": "CA",
+        "country": "USA",
+        "Tax": "9"
+    },
+    {
+        "name": "Colorado",
+        "code": "CO",
+        "country": "USA",
+        "Tax": "4"
+    },
+    {
+        "name": "Connecticut",
+        "code": "CT",
+        "country": "USA",
+        "Tax": "8"
+    },
+    {
+        "name": "Delaware",
+        "code": "DE",
+        "country": "USA",
+        "Tax": "1"
+    },
+    {
+        "name": "District of Columbia",
+        "code": "DC",
+        "country": "USA",
+        "Tax": "6"
+    },
+    {
+        "name": "Florida",
+        "code": "FL",
+        "country": "USA",
+        "Tax": "7"
+    },
+    {
+        "name": "Georgia",
+        "code": "GA",
+        "country": "USA",
+        "Tax": "5"
+    },
+    {
+        "name": "Hawaii",
+        "code": "HI",
+        "country": "USA",
+        "Tax": "8"
+    },
+    {
+        "name": "Idaho",
+        "code": "ID",
+        "country": "USA",
+        "Tax": "3"
+    },
+    {
+        "name": "Illinois",
+        "code": "IL",
+        "country": "USA",
+        "Tax": "6"
+    },
+    {
+        "name": "Indiana",
+        "code": "IN",
+        "country": "USA",
+        "Tax": "4"
+    },
+    {
+        "name": "Iowa",
+        "code": "IA",
+        "country": "USA",
+        "Tax": "2"
+    },
+    {
+        "name": "Kansas",
+        "code": "KS",
+        "country": "USA",
+        "Tax": "5"
+    },
+    {
+        "name": "Kentucky",
+        "code": "KY",
+        "country": "USA",
+        "Tax": "7"
+    },
+    {
+        "name": "Louisiana",
+        "code": "LA",
+        "country": "USA",
+        "Tax": "9"
+    },
+    {
+        "name": "Maine",
+        "code": "ME",
+        "country": "USA",
+        "Tax": "3"
+    },
+    {
+        "name": "Maryland",
+        "code": "MD",
+        "country": "USA",
+        "Tax": "6"
+    },
+    {
+        "name": "Massachusetts",
+        "code": "MA",
+        "country": "USA",
+        "Tax": "8"
+    },
+    {
+        "name": "Michigan",
+        "code": "MI",
+        "country": "USA",
+        "Tax": "5"
+    },
+    {
+        "name": "Minnesota",
+        "code": "MN",
+        "country": "USA",
+        "Tax": "4"
+    },
+    {
+        "name": "Mississippi",
+        "code": "MS",
+        "country": "USA",
+        "Tax": "2"
+    },
+    {
+        "name": "Missouri",
+        "code": "MO",
+        "country": "USA",
+        "Tax": "6"
+    },
+    {
+        "name": "Montana",
+        "code": "MT",
+        "country": "USA",
+        "Tax": "1"
+    },
+    {
+        "name": "Nebraska",
+        "code": "NE",
+        "country": "USA",
+        "Tax": "7"
+    },
+    {
+        "name": "Nevada",
+        "code": "NV",
+        "country": "USA",
+        "Tax": "5"
+    },
+    {
+        "name": "New Hampshire",
+        "code": "NH",
+        "country": "USA",
+        "Tax": "3"
+    },
+    {
+        "name": "New Jersey",
+        "code": "NJ",
+        "country": "USA",
+        "Tax": "8"
+    },
+    {
+        "name": "New Mexico",
+        "code": "NM",
+        "country": "USA",
+        "Tax": "4"
+    },
+    {
+        "name": "New York",
+        "code": "NY",
+        "country": "USA",
+        "Tax": "9"
+    },
+    {
+        "name": "North Carolina",
+        "code": "NC",
+        "country": "USA",
+        "Tax": "6"
+    },
+    {
+        "name": "North Dakota",
+        "code": "ND",
+        "country": "USA",
+        "Tax": "2"
+    },
+    {
+        "name": "Ohio",
+        "code": "OH",
+        "country": "USA",
+        "Tax": "5"
+    },
+    {
+        "name": "Oklahoma",
+        "code": "OK",
+        "country": "USA",
+        "Tax": "7"
+    },
+    {
+        "name": "Oregon",
+        "code": "OR",
+        "country": "USA",
+        "Tax": "3"
+    },
+    {
+        "name": "Pennsylvania",
+        "code": "PA",
+        "country": "USA",
+        "Tax": "6"
+    },
+    {
+        "name": "Rhode Island",
+        "code": "RI",
+        "country": "USA",
+        "Tax": "8"
+    },
+    {
+        "name": "South Carolina",
+        "code": "SC",
+        "country": "USA",
+        "Tax": "4"
+    },
+    {
+        "name": "South Dakota",
+        "code": "SD",
+        "country": "USA",
+        "Tax": "1"
+    },
+    {
+        "name": "Tennessee",
+        "code": "TN",
+        "country": "USA",
+        "Tax": "5"
+    },
+    {
+        "name": "Texas",
+        "code": "TX",
+        "country": "USA",
+        "Tax": "7"
+    },
+    {
+        "name": "Utah",
+        "code": "UT",
+        "country": "USA",
+        "Tax": "6"
+    },
+    {
+        "name": "Vermont",
+        "code": "VT",
+        "country": "USA",
+        "Tax": "2"
+    },
+    {
+        "name": "Virginia",
+        "code": "VA",
+        "country": "USA",
+        "Tax": "8"
+    },
+    {
+        "name": "Washington",
+        "code": "WA",
+        "country": "USA",
+        "Tax": "4"
+    },
+    {
+        "name": "West Virginia",
+        "code": "WV",
+        "country": "USA",
+        "Tax": "3"
+    },
+    {
+        "name": "Wisconsin",
+        "code": "WI",
+        "country": "USA",
+        "Tax": "6"
+    },
+    {
+        "name": "Wyoming",
+        "code": "WY",
+        "country": "USA",
+        "Tax": "4"
+    },
+    {
+        "name": "Dhaka",
+        "code": "DHK",
+        "country": "Bangladesh",
+        "Tax": "15"
+    }
+]

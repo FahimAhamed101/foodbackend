@@ -1,0 +1,588 @@
+{
+  "info": {
+    "name": "EMDR - Provider Signup & Onboarding (Complete)",
+    "description": "Complete provider registration and onboarding flow with all steps",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api/v1"
+    },
+    {
+      "key": "email",
+      "value": ""
+    },
+    {
+      "key": "otp",
+      "value": ""
+    },
+    {
+      "key": "tempToken",
+      "value": ""
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "providerId",
+      "value": ""
+    },
+    {
+      "key": "profileId",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "console.log('\\n' + '='.repeat(60));",
+          "console.log('🚀 REQUEST:', pm.request.method, pm.request.name);",
+          "console.log('📍 URL:', pm.request.url.toString());",
+          "console.log('='.repeat(60));"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (pm.response.code >= 200 && pm.response.code < 300) {",
+          "    try {",
+          "        const response = pm.response.json();",
+          "        console.log('✅ Response:', JSON.stringify(response, null, 2));",
+          "    } catch(e) {}",
+          "}",
+          "",
+          "console.log('📊 Status:', pm.response.code);",
+          "console.log('⏱️  Time:', pm.response.responseTime + 'ms');",
+          "console.log('='.repeat(60) + '\\n');"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "📁 Step 1: Register Email",
+      "item": [
+        {
+          "name": "1. Register Email & Send OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const res = pm.response.json();",
+                  "    ",
+                  "    console.log('\\n✅ EMAIL REGISTERED');",
+                  "    console.log('━'.repeat(60));",
+                  "    console.log('📧 Email:', pm.request.body.raw ? JSON.parse(pm.request.body.raw).email : 'N/A');",
+                  "    console.log('📨 OTP sent to email');",
+                  "    console.log('⏰ OTP expires in 10 minutes');",
+                  "    console.log('━'.repeat(60));",
+                  "    console.log('\\n⚠️  CHECK YOUR EMAIL FOR OTP CODE');",
+                  "    ",
+                  "    // Save email",
+                  "    const body = JSON.parse(pm.request.body.raw);",
+                  "    pm.collectionVariables.set('email', body.email);",
+                  "}",
+                  "",
+                  "pm.test('✅ Email registered', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"provider@example.com\",\n  \"fullName\": \"Restaurant Owner\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/provider/register-email",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "provider", "register-email"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📁 Step 2: Verify OTP",
+      "item": [
+        {
+          "name": "2. Verify Email OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const res = pm.response.json();",
+                  "    ",
+                  "    if (res.success && res.data && res.data.tempToken) {",
+                  "        pm.collectionVariables.set('tempToken', res.data.tempToken);",
+                  "        ",
+                  "        console.log('\\n✅ OTP VERIFIED');",
+                  "        console.log('━'.repeat(60));",
+                  "        console.log('🔑 Temp Token saved');",
+                  "        console.log('📧 Email verified successfully');",
+                  "        console.log('➡️  Next: Set password');",
+                  "        console.log('━'.repeat(60));",
+                  "    }",
+                  "}",
+                  "",
+                  "pm.test('✅ OTP verified', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "    pm.expect(res.data.tempToken).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"otp\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/provider/verify-email-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "provider", "verify-email-otp"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📁 Step 3: Set Password",
+      "item": [
+        {
+          "name": "3. Set Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const res = pm.response.json();",
+                  "    ",
+                  "    if (res.success && res.data && res.data.token) {",
+                  "        pm.collectionVariables.set('token', res.data.token);",
+                  "        ",
+                  "        if (res.data.user) {",
+                  "            pm.collectionVariables.set('providerId', res.data.user._id || res.data.user.id);",
+                  "        }",
+                  "        ",
+                  "        console.log('\\n✅ PASSWORD SET');",
+                  "        console.log('━'.repeat(60));",
+                  "        console.log('🔑 Token saved');",
+                  "        console.log('👤 Provider ID:', pm.collectionVariables.get('providerId'));",
+                  "        console.log('✅ Account created successfully');",
+                  "        console.log('➡️  Next: Submit restaurant info');",
+                  "        console.log('━'.repeat(60));",
+                  "    }",
+                  "}",
+                  "",
+                  "pm.test('✅ Password set', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "    pm.expect(res.data.token).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tempToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"SecurePassword123!\",\n  \"confirmPassword\": \"SecurePassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/provider/set-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "provider", "set-password"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📁 Step 4: Restaurant Info",
+      "item": [
+        {
+          "name": "4. Submit Restaurant Info (with Image)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    const res = pm.response.json();",
+                  "    ",
+                  "    if (res.success && res.data) {",
+                  "        if (res.data._id) {",
+                  "            pm.collectionVariables.set('profileId', res.data._id);",
+                  "        }",
+                  "        ",
+                  "        console.log('\\n✅ RESTAURANT INFO SUBMITTED');",
+                  "        console.log('━'.repeat(60));",
+                  "        console.log('🏪 Restaurant:', res.data.restaurantName);",
+                  "        console.log('📍 Location:', res.data.city + ', ' + res.data.state);",
+                  "        console.log('📧 Email:', res.data.contactEmail);",
+                  "        console.log('📞 Phone:', res.data.phoneNumber);",
+                  "        console.log('🍽️  Cuisine:', res.data.cuisine ? res.data.cuisine.join(', ') : 'N/A');",
+                  "        console.log('➡️  Next: Upload documents');",
+                  "        console.log('━'.repeat(60));",
+                  "    }",
+                  "}",
+                  "",
+                  "pm.test('✅ Restaurant info submitted', () => {",
+                  "    pm.response.to.have.status([200, 201]);",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "restaurantName",
+                  "value": "Pizza Paradise",
+                  "type": "text"
+                },
+                {
+                  "key": "contactEmail",
+                  "value": "info@pizzaparadise.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "+1-555-0123",
+                  "type": "text"
+                },
+                {
+                  "key": "restaurantAddress",
+                  "value": "123 Main Street",
+                  "type": "text"
+                },
+                {
+                  "key": "city",
+                  "value": "New York",
+                  "type": "text"
+                },
+                {
+                  "key": "state",
+                  "value": "NY",
+                  "type": "text"
+                },
+                {
+                  "key": "zipCode",
+                  "value": "10001",
+                  "type": "text"
+                },
+                {
+                  "key": "cuisine",
+                  "value": "Italian,Pizza,Pasta",
+                  "type": "text",
+                  "description": "Comma-separated values"
+                },
+                {
+                  "key": "restturanImage",
+                  "type": "file",
+                  "src": [],
+                  "description": "Restaurant profile image"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/provider/onboarding/restaurant-info",
+              "host": ["{{baseUrl}}"],
+              "path": ["provider", "onboarding", "restaurant-info"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📁 Step 5: Upload Documents",
+      "item": [
+        {
+          "name": "5. Upload Required Documents",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const res = pm.response.json();",
+                  "    ",
+                  "    console.log('\\n✅ DOCUMENTS UPLOADED');",
+                  "    console.log('━'.repeat(60));",
+                  "    console.log('📄 Documents submitted successfully');",
+                  "    console.log('⏳ Status: Pending admin approval');",
+                  "    console.log('➡️  Next: Wait for admin verification');",
+                  "    console.log('━'.repeat(60));",
+                  "}",
+                  "",
+                  "pm.test('✅ Documents uploaded', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "businessLicenseFile",
+                  "type": "file",
+                  "src": [],
+                  "description": "Business license document"
+                },
+                {
+                  "key": "healthPermitFile",
+                  "type": "file",
+                  "src": [],
+                  "description": "Health permit document"
+                },
+                {
+                  "key": "stateOrCityLicenseFile",
+                  "type": "file",
+                  "src": [],
+                  "description": "State/City license"
+                },
+                {
+                  "key": "proofOfAddressFile",
+                  "type": "file",
+                  "src": [],
+                  "description": "Proof of address"
+                },
+                {
+                  "key": "ownerGovernmentID",
+                  "type": "file",
+                  "src": [],
+                  "description": "Owner's government ID"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/provider/onboarding/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["provider", "onboarding", "documents"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📁 Step 6: Check Status",
+      "item": [
+        {
+          "name": "6. Check Onboarding Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const res = pm.response.json();",
+                  "    ",
+                  "    if (res.success && res.data) {",
+                  "        console.log('\\n✅ ONBOARDING STATUS');",
+                  "        console.log('━'.repeat(60));",
+                  "        console.log('📊 Status:', res.data.verificationStatus);",
+                  "        console.log('✅ Verified:', res.data.isVerify ? 'Yes' : 'No');",
+                  "        console.log('🏪 Active:', res.data.isActive ? 'Yes' : 'No');",
+                  "        ",
+                  "        if (res.data.verificationStatus === 'PENDING') {",
+                  "            console.log('\\n⏳ Waiting for admin approval');",
+                  "        } else if (res.data.verificationStatus === 'APPROVED') {",
+                  "            console.log('\\n✅ Account approved! You can start adding foods');",
+                  "        } else if (res.data.verificationStatus === 'REJECTED') {",
+                  "            console.log('\\n❌ Account rejected');",
+                  "            if (res.data.blockReason) {",
+                  "                console.log('   Reason:', res.data.blockReason);",
+                  "            }",
+                  "        }",
+                  "        console.log('━'.repeat(60));",
+                  "    }",
+                  "}",
+                  "",
+                  "pm.test('✅ Status retrieved', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/provider/onboarding/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["provider", "onboarding", "status"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📁 Admin Actions",
+      "item": [
+        {
+          "name": "Admin: Get Pending Providers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "description": "Admin token required"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/providers/pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "providers", "pending"]
+            }
+          }
+        },
+        {
+          "name": "Admin: Get Provider Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/providers/{{providerId}}/verification-details",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "providers", "{{providerId}}", "verification-details"]
+            }
+          }
+        },
+        {
+          "name": "Admin: Approve Provider",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"approve\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/providers/{{providerId}}/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "providers", "{{providerId}}", "verify"]
+            }
+          }
+        },
+        {
+          "name": "Admin: Reject Provider",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"reject\",\n  \"reason\": \"Incomplete documentation\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/providers/{{providerId}}/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "providers", "{{providerId}}", "verify"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

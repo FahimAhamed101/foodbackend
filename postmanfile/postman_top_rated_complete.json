@@ -1,0 +1,369 @@
+{
+  "info": {
+    "name": "EMDR - Top Rated (Restaurants & Foods)",
+    "description": "Get top rated restaurants and foods with rating >= 4.5",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api/v1"
+    },
+    {
+      "key": "providerId",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "console.log('\\n' + '='.repeat(60));",
+          "console.log('🚀 REQUEST:', pm.request.method, pm.request.name);",
+          "console.log('📍 URL:', pm.request.url.toString());",
+          "console.log('='.repeat(60));"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('✅ Response time < 5s', () => {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "console.log('📊 Status:', pm.response.code);",
+          "console.log('⏱️  Time:', pm.response.responseTime + 'ms');",
+          "console.log('='.repeat(60) + '\\n');"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "📁 Top Rated Restaurants",
+      "item": [
+        {
+          "name": "1. Get All Restaurants (Sorted by Reviews)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const res = pm.response.json();",
+                  "    ",
+                  "    console.log('\\n✅ ALL RESTAURANTS LOADED (SORTED BY REVIEWS)');",
+                  "    console.log('━'.repeat(60));",
+                  "    console.log('📊 Total Restaurants:', res.meta.total);",
+                  "    console.log('📄 Page:', res.meta.page);",
+                  "    console.log('📦 Limit:', res.meta.limit);",
+                  "    ",
+                  "    if (res.data && res.data.length > 0) {",
+                  "        console.log('\\n🏆 RESTAURANTS (Most Reviewed First):');",
+                  "        res.data.forEach((restaurant, i) => {",
+                  "            console.log(`\\n   ${i+1}. ${restaurant.restaurantName}`);",
+                  "            if (restaurant.totalReviews > 0) {",
+                  "                console.log(`      ⭐ Rating: ${restaurant.rating.toFixed(2)} (${restaurant.totalReviews} reviews)`);",
+                  "            } else {",
+                  "                console.log(`      ⭐ Rating: No reviews yet`);",
+                  "            }",
+                  "            console.log(`      � Location: ${restaurant.city}, ${restaurant.state}`);",
+                  "            console.log(`      �️  Cuisine: ${restaurant.cuisine.join(', ') || 'Not specified'}`);",
+                  "            console.log(`      ✅ Verified: ${restaurant.isVerified ? 'Yes' : 'No'}`);",
+                  "            console.log(`      📞 Phone: ${restaurant.phoneNumber}`);",
+                  "            console.log(`      🆔 Provider ID: ${restaurant.providerId}`);",
+                  "        });",
+                  "        ",
+                  "        // Save first provider ID",
+                  "        if (res.data[0].providerId) {",
+                  "            pm.collectionVariables.set('providerId', res.data[0].providerId);",
+                  "            console.log('\\n✅ Provider ID saved:', res.data[0].providerId);",
+                  "        }",
+                  "    } else {",
+                  "        console.log('\\n⚠️  No restaurants found');",
+                  "    }",
+                  "    console.log('\\n━'.repeat(60));",
+                  "}",
+                  "",
+                  "pm.test('✅ Restaurants loaded', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "    pm.expect(res.data).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('✅ Sorted by review count', () => {",
+                  "    const res = pm.response.json();",
+                  "    if (res.data && res.data.length > 1) {",
+                  "        for (let i = 0; i < res.data.length - 1; i++) {",
+                  "            pm.expect(res.data[i].totalReviews).to.be.at.least(res.data[i + 1].totalReviews);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/top-rated/restaurants?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["top-rated", "restaurants"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Items per page"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2. Get Restaurants with Min Rating Filter",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const res = pm.response.json();",
+                  "    const minRating = parseFloat(pm.request.url.query.get('minRating'));",
+                  "    ",
+                  "    console.log('\\n✅ FILTERED RESTAURANTS');",
+                  "    console.log('━'.repeat(60));",
+                  "    console.log('⭐ Min Rating:', minRating);",
+                  "    console.log('📊 Total Found:', res.meta.total);",
+                  "    ",
+                  "    if (res.data && res.data.length > 0) {",
+                  "        console.log('\\n🏆 RESTAURANTS:');",
+                  "        res.data.forEach((r, i) => {",
+                  "            console.log(`   ${i+1}. ${r.restaurantName} - ⭐${r.rating.toFixed(2)} (${r.totalReviews} reviews)`);",
+                  "        });",
+                  "    }",
+                  "    console.log('━'.repeat(60));",
+                  "}",
+                  "",
+                  "pm.test('✅ All restaurants meet min rating', () => {",
+                  "    const res = pm.response.json();",
+                  "    const minRating = parseFloat(pm.request.url.query.get('minRating'));",
+                  "    if (res.data && res.data.length > 0) {",
+                  "        res.data.forEach(restaurant => {",
+                  "            if (restaurant.totalReviews > 0) {",
+                  "                pm.expect(restaurant.rating).to.be.at.least(minRating);",
+                  "            }",
+                  "        });",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/top-rated/restaurants?minRating=4.5&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["top-rated", "restaurants"],
+              "query": [
+                {
+                  "key": "minRating",
+                  "value": "4.5",
+                  "description": "Minimum rating filter (optional, default: 0)"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📁 Top Rated Foods",
+      "item": [
+        {
+          "name": "1. Get Top Foods (Rating >= 4.5)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const res = pm.response.json();",
+                  "    ",
+                  "    console.log('\\n✅ TOP FOODS LOADED');",
+                  "    console.log('━'.repeat(60));",
+                  "    console.log('📊 Total Foods:', res.meta.total);",
+                  "    console.log('📄 Page:', res.meta.page);",
+                  "    console.log('📦 Limit:', res.meta.limit);",
+                  "    ",
+                  "    if (res.data && res.data.length > 0) {",
+                  "        console.log('\\n🍔 TOP RATED FOODS:');",
+                  "        res.data.forEach((food, i) => {",
+                  "            console.log(`\\n   ${i+1}. ${food.name}`);",
+                  "            console.log(`      ⭐ Rating: ${food.rating.toFixed(2)} (${food.totalReviews} reviews)`);",
+                  "            console.log(`      💰 Price: $${food.price}`);",
+                  "            console.log(`      📂 Category: ${food.category}`);",
+                  "            console.log(`      🏪 Provider: ${food.provider}`);",
+                  "            console.log(`      📦 In Stock: ${food.inStock ? '✅ Yes' : '❌ No'}`);",
+                  "        });",
+                  "    } else {",
+                  "        console.log('\\n⚠️  No top rated foods found');",
+                  "    }",
+                  "    console.log('\\n━'.repeat(60));",
+                  "}",
+                  "",
+                  "pm.test('✅ Top foods loaded', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "    pm.expect(res.data).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('✅ All foods have rating >= 4.5', () => {",
+                  "    const res = pm.response.json();",
+                  "    if (res.data && res.data.length > 0) {",
+                  "        res.data.forEach(food => {",
+                  "            pm.expect(food.rating).to.be.at.least(4.5);",
+                  "        });",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/top-rated/foods?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["top-rated", "foods"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Items per page"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2. Get Top Foods from Specific Restaurant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const res = pm.response.json();",
+                  "    ",
+                  "    console.log('\\n✅ RESTAURANT TOP FOODS');",
+                  "    console.log('━'.repeat(60));",
+                  "    console.log('🏪 Provider ID:', pm.request.url.query.get('providerId'));",
+                  "    console.log('📊 Total Foods:', res.meta.total);",
+                  "    ",
+                  "    if (res.data && res.data.length > 0) {",
+                  "        console.log('\\n🍔 TOP FOODS:');",
+                  "        res.data.forEach((food, i) => {",
+                  "            console.log(`   ${i+1}. ${food.name} - ⭐${food.rating.toFixed(2)} - $${food.price}`);",
+                  "        });",
+                  "    }",
+                  "    console.log('━'.repeat(60));",
+                  "}",
+                  "",
+                  "pm.test('✅ All foods from same provider', () => {",
+                  "    const res = pm.response.json();",
+                  "    const providerId = pm.request.url.query.get('providerId');",
+                  "    if (res.data && res.data.length > 0) {",
+                  "        res.data.forEach(food => {",
+                  "            pm.expect(food.providerID).to.equal(providerId);",
+                  "        });",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/top-rated/foods?providerId={{providerId}}&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["top-rated", "foods"],
+              "query": [
+                {
+                  "key": "providerId",
+                  "value": "{{providerId}}",
+                  "description": "Filter by provider ID"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3. Get Top Foods (Custom Min Rating)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/top-rated/foods?minRating=4.8&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["top-rated", "foods"],
+              "query": [
+                {
+                  "key": "minRating",
+                  "value": "4.8",
+                  "description": "Minimum rating"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
