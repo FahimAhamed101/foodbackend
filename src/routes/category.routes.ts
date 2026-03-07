@@ -6,7 +6,7 @@ import { requireRole } from '../middlewares/requireRole';
 import { requireApproval } from '../middlewares/requireApproval';
 import { validate } from '../middlewares/validate';
 import { createCategorySchema, updateCategorySchema, categoryIdSchema, } from '../validations/category.validation';
-import cloudinaryConfig from '../config/cloudinary';
+import { upload } from '../middlewares/upload';
 
 const router = express.Router();
 
@@ -29,7 +29,7 @@ router.use(requireRole(['PROVIDER']));
 router.use(requireApproval);
 router.use(providerLimiter);
 
-router.post('/', cloudinaryConfig.upload.single('image'), validate(createCategorySchema), categoryController.createCategory);
+router.post('/', upload.single('image'), validate(createCategorySchema), categoryController.createCategory);
 router.get('/my-categories', categoryController.getOwnCategories);
 
 router.route('/:id')

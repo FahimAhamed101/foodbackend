@@ -455,16 +455,20 @@ export const sendMessageWithImage = async (req: AuthRequest, res: Response, next
         // 2. Upload Image if present
         let imageUrl: any = null;
         if (file) {
-            imageUrl = await new Promise((resolve, reject) => {
-                const uploadStream = cloudinaryConfig.cloudinary.uploader.upload_stream(
-                    { folder: 'chat_images' },
-                    (error: any, result: any) => {
-                        if (error) return reject(error);
-                        resolve(result?.secure_url || null);
-                    }
-                );
-                uploadStream.end(file.buffer);
-            });
+            imageUrl = (file as Express.Multer.File & { path?: string }).path || null;
+
+            if (!imageUrl && file.buffer) {
+                imageUrl = await new Promise((resolve, reject) => {
+                    const uploadStream = cloudinaryConfig.cloudinary.uploader.upload_stream(
+                        { folder: 'chat_images' },
+                        (error: any, result: any) => {
+                            if (error) return reject(error);
+                            resolve(result?.secure_url || null);
+                        }
+                    );
+                    uploadStream.end(file.buffer);
+                });
+            }
         }
 
 
