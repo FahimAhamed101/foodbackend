@@ -156,17 +156,22 @@ class DashboardService {
         const recentOrders = await Order.find({ providerId: pId })
             .sort({ createdAt: -1 })
             .limit(5)
-            .populate('customerId', 'fullName email')
-            .select('orderId customerId logisticsType paymentMethod status createdAt');
+            .populate('customerId', 'fullName email profilePic googlePicture')
+            .select('orderId customerId logisticsType paymentMethod status totalPrice createdAt');
 
-        return recentOrders.map(order => ({
-            orderId: order.orderId,
-            customerName: (order.customerId as any)?.fullName || 'Unknown',
-            logisticsType: order.logisticsType,
-            paymentMethod: order.paymentMethod,
-            status: order.status,
-            createdAt: order.createdAt,
-        }));
+        return recentOrders.map(order => {
+            const customer = order.customerId as any;
+            return {
+                orderId: order.orderId,
+                customerName: customer?.fullName || 'Unknown',
+                customerAvatar: customer?.profilePic || customer?.googlePicture || '',
+                logisticsType: order.logisticsType,
+                paymentMethod: order.paymentMethod,
+                status: order.status,
+                totalPrice: order.totalPrice,
+                createdAt: order.createdAt,
+            };
+        });
     }
 
     async getUnifiedDashboardData(providerId: string) {

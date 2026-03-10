@@ -1,6 +1,7 @@
 import { Order, OrderStatus } from '../models/order.model';
 import { User, UserRole } from '../models/user.model';
 import { ProviderProfile } from '../models/providerProfile.model';
+import { Profile } from '../models/profile.model';
 import { Food } from '../models/food.model';
 import { Category } from '../models/category.model';
 import AppError from '../utils/AppError';
@@ -31,6 +32,35 @@ interface ProviderWithDistance {
 }
 
 class ProviderService {
+    private async getCustomerAvatarMap(customerIds: string[]) {
+        const uniqueCustomerIds = Array.from(new Set(customerIds.filter(Boolean)));
+        if (uniqueCustomerIds.length === 0) {
+            return new Map<string, string>();
+        }
+
+        const objectIds = uniqueCustomerIds
+            .filter(id => Types.ObjectId.isValid(id))
+            .map(id => new Types.ObjectId(id));
+
+        if (objectIds.length === 0) {
+            return new Map<string, string>();
+        }
+
+        const profiles = await Profile.find({ userId: { $in: objectIds } })
+            .select('userId profilePic avatar')
+            .lean();
+
+        const avatarMap = new Map<string, string>();
+        for (const profile of profiles) {
+            const userId = profile?.userId?.toString?.();
+            if (!userId) continue;
+            const avatar = profile?.profilePic || profile?.avatar || '';
+            if (avatar) avatarMap.set(userId, avatar);
+        }
+
+        return avatarMap;
+    }
+
     /**
      * Get nearby providers using Haversine formula
      */
@@ -286,7 +316,7 @@ class ProviderService {
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit)
-                .populate('customerId', 'fullName email phone profilePic')
+                .populate('customerId', 'fullName email phone profilePic googlePicture')
                 .populate('items.foodId', 'title image'),
 
             Order.countDocuments({
@@ -296,9 +326,21 @@ class ProviderService {
         ]);
 
         const totalPages = Math.ceil(total / limit);
+        const customerAvatarMap = await this.getCustomerAvatarMap(
+            orders
+                .map((order: any) => order?.customerId?._id?.toString?.() || '')
+                .filter(Boolean)
+        );
 
         const formattedOrders = orders.map(order => {
             const customer = order.customerId as any;
+            const customerId = customer?._id?.toString?.() || '';
+            const customerAvatar =
+                customer?.profilePic ||
+                customer?.googlePicture ||
+                (customerId ? customerAvatarMap.get(customerId) : '') ||
+                '';
+
             return {
                 orderId: order.orderId,
                 status: order.status,
@@ -307,7 +349,9 @@ class ProviderService {
                     id: customer?._id,
                     name: customer?.fullName || 'Unknown',
                     phone: customer?.phone,
-                    profilePic: customer?.profilePic
+                    profilePic: customerAvatar,
+                    avatar: customerAvatar,
+                    profilePicture: customerAvatar,
                 },
                 items: order.items.map((item: any) => ({
                     name: item.foodId?.title || 'Unknown Item',
@@ -348,16 +392,28 @@ class ProviderService {
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit)
-                .populate('customerId', 'fullName email phone profilePic')
+                .populate('customerId', 'fullName email phone profilePic googlePicture')
                 .populate('items.foodId', 'title image'),
 
             Order.countDocuments(query)
         ]);
 
         const totalPages = Math.ceil(total / limit);
+        const customerAvatarMap = await this.getCustomerAvatarMap(
+            orders
+                .map((order: any) => order?.customerId?._id?.toString?.() || '')
+                .filter(Boolean)
+        );
 
         const formattedOrders = orders.map(order => {
             const customer = order.customerId as any;
+            const customerId = customer?._id?.toString?.() || '';
+            const customerAvatar =
+                customer?.profilePic ||
+                customer?.googlePicture ||
+                (customerId ? customerAvatarMap.get(customerId) : '') ||
+                '';
+
             return {
                 orderId: order.orderId,
                 status: order.status,
@@ -366,7 +422,9 @@ class ProviderService {
                     id: customer?._id,
                     name: customer?.fullName || 'Unknown',
                     phone: customer?.phone,
-                    profilePic: customer?.profilePic
+                    profilePic: customerAvatar,
+                    avatar: customerAvatar,
+                    profilePicture: customerAvatar,
                 },
                 items: order.items.map((item: any) => ({
                     name: item.foodId?.title || 'Unknown Item',

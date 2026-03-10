@@ -34,7 +34,7 @@ router.get('/my-categories', categoryController.getOwnCategories);
 
 router.route('/:id')
     .get(validate(categoryIdSchema), categoryController.getCategoryById)
-    .patch(validate(updateCategorySchema), categoryController.updateCategory)
+    .patch(cloudinaryConfig.upload.single('image'), validate(updateCategorySchema), categoryController.updateCategory)
     .delete(validate(categoryIdSchema), categoryController.deleteCategory);
 
 export default router;

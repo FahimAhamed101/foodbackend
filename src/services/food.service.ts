@@ -8,14 +8,15 @@ import complianceService from './compliance.service';
 
 class FoodService {
 
-    private async verifyCategoryOwnership(categoryId: string, providerId: string) {
-        const category = await Category.findOne({
-            _id: new Types.ObjectId(categoryId),
-            providerId: new Types.ObjectId(providerId),
-        });
+    private async verifyCategoryExists(categoryId: string) {
+        if (!Types.ObjectId.isValid(categoryId)) {
+            throw new AppError('Category not found', 404, 'CATEGORY_NOT_FOUND_ERROR');
+        }
+
+        const category = await Category.findById(new Types.ObjectId(categoryId));
 
         if (!category) {
-            throw new AppError('Category not found or does not belong to you', 403, 'CATEGORY_OWNERSHIP_ERROR');
+            throw new AppError('Category not found', 404, 'CATEGORY_NOT_FOUND_ERROR');
         }
         return category;
     }
@@ -23,12 +24,12 @@ class FoodService {
     async createFood(providerId: string, foodData: any) {
             const { categoryId, title, baseRevenue, serviceFee, productDescription, image } = foodData;
 
-            // Validate image is provided (either URL or uploaded file)
+            // Image must come from uploaded file handled by controller/upload middleware
             if (!image) {
-                throw new AppError('Image is required. Provide image URL in JSON or upload file via form-data', 400, 'IMAGE_REQUIRED');
+                throw new AppError('Image upload is required', 400, 'IMAGE_REQUIRED');
             }
 
-            await this.verifyCategoryOwnership(categoryId, providerId);
+            await this.verifyCategoryExists(categoryId);
 
             const existingFood = await Food.findOne({
                 categoryId: new Types.ObjectId(categoryId),
@@ -74,13 +75,15 @@ class FoodService {
 
 
     async getProviderFoods(providerId: string, filters: any) {
-        const { categoryName, status, page = 1, limit = 10 } = filters;
+        const { categoryId, categoryName, status, page = 1, limit = 10 } = filters;
         const query: any = { providerId: new Types.ObjectId(providerId) };
 
-        if (categoryName) {
+        if (categoryId) {
+            await this.verifyCategoryExists(categoryId);
+            query.categoryId = new Types.ObjectId(categoryId);
+        } else if (categoryName) {
             const escapedName = categoryName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const category = await Category.findOne({
-                providerId: new Types.ObjectId(providerId),
                 categoryName: { $regex: new RegExp(`^${escapedName}$`, 'i') },
             });
 
@@ -130,7 +133,7 @@ class FoodService {
     }
 
     async getFoodsByCategory(categoryId: string, providerId: string) {
-        await this.verifyCategoryOwnership(categoryId, providerId);
+        await this.verifyCategoryExists(categoryId);
 
         return await Food.find({
             categoryId: new Types.ObjectId(categoryId),
@@ -162,7 +165,7 @@ class FoodService {
         }
 
         if (updateData.categoryId && updateData.categoryId.toString() !== food.categoryId.toString()) {
-            await this.verifyCategoryOwnership(updateData.categoryId, providerId);
+            await this.verifyCategoryExists(updateData.categoryId);
         }
 
         if (updateData.baseRevenue !== undefined || updateData.serviceFee !== undefined) {

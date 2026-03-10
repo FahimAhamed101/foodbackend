@@ -55,11 +55,17 @@ class CategoryController {
         });
     });
 
-    updateCategory = catchAsync(async (req: AuthRequest, res: Response) => {
+    updateCategory = catchAsync(async (req: any, res: Response) => {
         const providerId = req.user!.userId;
         const categoryId = req.params.id as string;
 
-        const category = await categoryService.updateCategory(categoryId, providerId, req.body);
+        const image = req.body.image || (req.file ? req.file.path : undefined);
+        const updateData = {
+            ...req.body,
+            ...(image ? { image } : {}),
+        };
+
+        const category = await categoryService.updateCategory(categoryId, providerId, updateData);
 
         res.status(200).json({
             success: true,

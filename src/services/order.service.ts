@@ -195,7 +195,7 @@ class OrderService {
                 { orderId: orderId },
                 { _id: Types.ObjectId.isValid(orderId) ? new Types.ObjectId(orderId) : undefined }
             ].filter(q => q._id !== undefined || q.orderId)
-        }).populate('customerId', 'fullName email phoneNumber')
+        }).populate('customerId', 'fullName email phone phoneNumber profilePic googlePicture')
             .populate('providerId', 'fullName email')
             .populate('items.foodId', 'name image');
 
@@ -208,6 +208,21 @@ class OrderService {
         }
         if (role === 'PROVIDER' && order.providerId._id.toString() !== userId) {
             throw new AppError('Not authorized to view this order', 403, 'ROLE_ERROR');
+        }
+
+        const customer = order.customerId as any;
+        if (customer?._id) {
+            const customerProfile = await Profile.findOne({ userId: customer._id })
+                .select('profilePic avatar')
+                .lean();
+            const resolvedAvatar =
+                customer?.profilePic ||
+                customer?.googlePicture ||
+                customerProfile?.profilePic ||
+                customerProfile?.avatar ||
+                '';
+            customer.profilePic = resolvedAvatar;
+            customer.avatar = resolvedAvatar;
         }
 
         return order;

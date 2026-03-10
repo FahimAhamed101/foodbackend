@@ -35,8 +35,8 @@ router.use(requireRole(['PROVIDER']));
 router.use(requireApproval);
 router.use(foodOpsLimiter);
 
-// Create food - supports both JSON (image URL) and form-data (file upload)
-router.post('/', upload.single('image'), foodController.createFood);
+// Create food - requires multipart/form-data image upload
+router.post('/', upload.single('image'), validate(createFoodSchema), foodController.createFood);
 
 // Get own foods
 router.get('/', validate(getFoodsQuerySchema), foodController.getOwnFoods);
@@ -47,7 +47,8 @@ router.get('/category/:categoryId', validate(foodByCategorySchema), foodControll
 // Get, update, delete food by ID
 router.route('/:id')
     .get(validate(foodIdSchema), foodController.getFoodById)
-    .patch(upload.single('image'), foodController.updateFood)
+    // Optional image replacement via multipart/form-data
+    .patch(upload.single('image'), validate(updateFoodSchema), foodController.updateFood)
     .delete(validate(foodIdSchema), foodController.deleteFood);
 router.get('/:foodId/stats', requireRole(['PROVIDER']), favoriteController.getFoodStats);
 

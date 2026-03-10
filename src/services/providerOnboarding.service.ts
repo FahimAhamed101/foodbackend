@@ -17,6 +17,56 @@ import { sendEmail } from '../utils/emailService';
 import { getOtpEmailTemplate } from '../utils/emailTemplate';
 
 class ProviderOnboardingService {
+    private parseCoordinate(value: unknown, min: number, max: number): number | undefined {
+        const parsed = typeof value === 'number' ? value : Number(value);
+        if (!Number.isFinite(parsed)) return undefined;
+        if (parsed < min || parsed > max) return undefined;
+        return Number(parsed.toFixed(6));
+    }
+
+    private extractLocation(data: any): { lat: number; lng: number } | undefined {
+        const latRaw =
+            data?.location?.lat ??
+            data?.['location[lat]'] ??
+            data?.['location.lat'] ??
+            data?.lat;
+        const lngRaw =
+            data?.location?.lng ??
+            data?.['location[lng]'] ??
+            data?.['location.lng'] ??
+            data?.lng;
+
+        const lat = this.parseCoordinate(latRaw, -90, 90);
+        const lng = this.parseCoordinate(lngRaw, -180, 180);
+
+        if (lat === undefined || lng === undefined) return undefined;
+        return { lat, lng };
+    }
+
+    private normalizeCuisine(value: unknown): string[] {
+        if (Array.isArray(value)) {
+            return value.map((item) => String(item).trim()).filter(Boolean);
+        }
+
+        if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if (!trimmed) return [];
+
+            try {
+                const parsed = JSON.parse(trimmed);
+                if (Array.isArray(parsed)) {
+                    return parsed.map((item) => String(item).trim()).filter(Boolean);
+                }
+            } catch {
+                // Fallback to comma-separated string
+            }
+
+            return trimmed.split(',').map((item) => item.trim()).filter(Boolean);
+        }
+
+        return [];
+    }
+
 
     // ──────────────────────────────────────────────────────────
     // STEP 1: Register Email & Send OTP
@@ -50,6 +100,9 @@ class ProviderOnboardingService {
         // Generate & send OTP
         const rawOtp = generateOtp();
         const hashedOtp = hashOtp(rawOtp);
+        if (process.env.NODE_ENV !== 'production') {
+            console.log(`[ONBOARDING][OTP][DEBUG] email=${normalizedEmail} otp=${rawOtp}`);
+        }
 
         await Otp.deleteMany({ email: normalizedEmail, purpose: OtpPurpose.EMAIL_VERIFY });
 
@@ -169,18 +222,24 @@ class ProviderOnboardingService {
         if (!user) throw new AppError('User not found', 404);
         if (user.role !== UserRole.PROVIDER) throw new AppError('Only providers can submit info', 403);
 
+        const location = this.extractLocation(data);
+
         const profileData: any = {
             restaurantName: data.restaurantName,
             contactEmail: data.email || data.contactEmail || user.email,
-            phoneNumber: data.phoneNumber || data.PhoneNumebr,
+            phoneNumber: data.phoneNumber || data.PhoneNumebr || data.PhoneNumerb,
             restaurantAddress: data.restaurantAddress || data.RestaurantAddress,
             city: data.city || 'Pending',
             state: data.state || 'Pending',
             zipCode: data.zipCode || '',
-            cuisine: data.cuisine ? (typeof data.cuisine === 'string' ? JSON.parse(data.cuisine) : data.cuisine) : [],
+            cuisine: this.normalizeCuisine(data.cuisine),
             verificationStatus: 'PENDING',
             isVerify: false,
         };
+
+        if (location) {
+            profileData.location = location;
+        }
 
         if (restaurantImageUrl) profileData.profile = restaurantImageUrl;
 

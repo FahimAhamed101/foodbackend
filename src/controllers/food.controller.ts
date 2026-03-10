@@ -2,18 +2,64 @@ import { Response } from 'express';
 import { AuthRequest } from '../middlewares/authenticate';
 import foodService from '../services/food.service';
 import { catchAsync } from '../utils/catchAsync';
+import AppError from '../utils/AppError';
+
+const parseNumber = (value: unknown): number | undefined => {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'string') {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : undefined;
+    }
+    return undefined;
+};
+
+const parseBoolean = (value: unknown): boolean | undefined => {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        if (normalized === 'true') return true;
+        if (normalized === 'false') return false;
+    }
+    return undefined;
+};
+
+const normalizeFoodPayload = (payload: Record<string, unknown>) => {
+    const normalized: Record<string, unknown> = { ...payload };
+
+    const calories = parseNumber(payload.calories);
+    if (calories !== undefined) normalized.calories = calories;
+
+    const baseRevenue = parseNumber(payload.baseRevenue);
+    if (baseRevenue !== undefined) normalized.baseRevenue = baseRevenue;
+
+    const serviceFee = parseNumber(payload.serviceFee);
+    if (serviceFee !== undefined) normalized.serviceFee = serviceFee;
+
+    const foodAvailability = parseBoolean(payload.foodAvailability);
+    if (foodAvailability !== undefined) normalized.foodAvailability = foodAvailability;
+
+    const foodStatus = parseBoolean(payload.foodStatus);
+    if (foodStatus !== undefined) normalized.foodStatus = foodStatus;
+
+    return normalized;
+};
 
 class FoodController {
     createFood = catchAsync(async (req: AuthRequest, res: Response) => {
         const providerId = req.user!.userId;
-        
-        // Handle image from form-data upload or JSON body
-        const foodData = { ...req.body };
-        if (req.file) {
-            // File uploaded via form-data
-            foodData.image = (req.file as any).path; // Cloudinary URL
+
+        if (!req.file) {
+            throw new AppError('Product image file is required', 400, 'IMAGE_REQUIRED');
         }
-        
+
+        const uploadedImage = (req.file as Express.Multer.File & { path?: string }).path;
+        if (!uploadedImage) {
+            throw new AppError('Uploaded image could not be processed', 400, 'IMAGE_UPLOAD_ERROR');
+        }
+
+        const foodData = normalizeFoodPayload(req.body as Record<string, unknown>);
+        foodData.image = uploadedImage;
+
         const food = await foodService.createFood(providerId, foodData);
 
         res.status(201).json({
@@ -61,14 +107,18 @@ class FoodController {
     updateFood = catchAsync(async (req: AuthRequest, res: Response) => {
         const providerId = req.user!.userId;
         const foodId = req.params.id as string;
-        
-        // Handle image from form-data upload or JSON body
-        const updateData = { ...req.body };
+
+        const updateData = normalizeFoodPayload(req.body as Record<string, unknown>);
+        delete updateData.image;
+
         if (req.file) {
-            // File uploaded via form-data
-            updateData.image = (req.file as any).path; // Cloudinary URL
+            const uploadedImage = (req.file as Express.Multer.File & { path?: string }).path;
+            if (!uploadedImage) {
+                throw new AppError('Uploaded image could not be processed', 400, 'IMAGE_UPLOAD_ERROR');
+            }
+            updateData.image = uploadedImage;
         }
-        
+
         const food = await foodService.updateFood(foodId, providerId, updateData);
 
         res.status(200).json({
