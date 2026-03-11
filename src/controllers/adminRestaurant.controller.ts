@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { AuthRequest } from '../middlewares/authenticate';
 import { catchAsync } from '../utils/catchAsync';
 import adminRestaurantService from '../services/adminRestaurant.service';
 
@@ -52,16 +53,18 @@ class AdminRestaurantController {
         res.status(200).json({ status: 'success', message: 'Restaurant unblocked successfully' });
     });
 
-    approveRestaurant = catchAsync(async (req: Request, res: Response) => {
+    approveRestaurant = catchAsync(async (req: AuthRequest, res: Response) => {
         const { restaurantId } = req.params;
-        await adminRestaurantService.approveRestaurant(restaurantId as string);
+        const adminId = req.user?.userId;
+        await adminRestaurantService.approveRestaurant(restaurantId as string, adminId);
         res.status(200).json({ status: 'success', message: 'Restaurant approved successfully' });
     });
 
-    rejectRestaurant = catchAsync(async (req: Request, res: Response) => {
+    rejectRestaurant = catchAsync(async (req: AuthRequest, res: Response) => {
         const { restaurantId } = req.params;
         const { reason } = req.body;
-        await adminRestaurantService.rejectRestaurant(restaurantId as string, reason);
+        const adminId = req.user?.userId;
+        await adminRestaurantService.rejectRestaurant(restaurantId as string, reason, adminId);
         res.status(200).json({ status: 'success', message: 'Restaurant rejected successfully' });
     });
 

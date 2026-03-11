@@ -20,6 +20,38 @@ const formatResponse = (data: any) => ({
     }
 });
 
+const findPrimaryAdmin = async () => {
+    const admin = await User.findOne({
+        role: UserRole.ADMIN,
+        isActive: true,
+        isSuspended: { $ne: true },
+    })
+        .sort({ createdAt: 1 })
+        .select('_id role')
+        .lean();
+
+    return admin ? { id: admin._id.toString(), role: admin.role } : null;
+};
+
+const ensureProviderAdminConversation = async (providerObjectId: Types.ObjectId) => {
+    const admin = await findPrimaryAdmin();
+    if (!admin) return null;
+
+    const adminObjectId = new Types.ObjectId(admin.id);
+    let room = await ChatRoom.findOne({
+        participants: { $all: [providerObjectId, adminObjectId] },
+    });
+
+    if (!room) {
+        room = await ChatRoom.create({
+            participants: [providerObjectId, adminObjectId],
+            isActive: true,
+        });
+    }
+
+    return room;
+};
+
 const buildProfilePictureMap = async (userIds: string[]) => {
     const normalizedIds = Array.from(
         new Set(userIds.filter((id) => typeof id === 'string' && Types.ObjectId.isValid(id)))
@@ -172,6 +204,10 @@ export const getConversations = async (req: AuthRequest, res: Response, next: Ne
         const userId = new Types.ObjectId(req.user?.userId);
         const userRole = req.user?.role;
         const limit = parseInt(req.query.limit as string) || 20;
+
+        if (userRole === UserRole.PROVIDER) {
+            await ensureProviderAdminConversation(userId);
+        }
 
         const conversations = await ChatRoom.aggregate([
             { $match: { participants: userId, isActive: true } }, // Filter out archived/inactive by default
@@ -562,6 +598,10 @@ export const sendMessageWithImage = async (req: AuthRequest, res: Response, next
         let { receiverId, text } = body;
         const senderId = req.user?.userId;
         const senderRole = req.user?.role;
+        const routePath = (req.path || '').toLowerCase();
+        const isCustomerToProvider = routePath.endsWith('/customer-to-provider');
+        const isProviderToAdmin = routePath.endsWith('/provider-to-admin');
+        const isCustomerToAdmin = routePath.endsWith('/customer-to-admin');
 
         // If 'Text' (capitalized) is sent from Postman form-data, accept it
         if (!text && body.Text) text = body.Text;
@@ -573,12 +613,21 @@ export const sendMessageWithImage = async (req: AuthRequest, res: Response, next
             return next(new AppError('Message must contain text or image', 400));
         }
 
-        if (!receiverId) {
-            return next(new AppError('Receiver ID is required', 400));
-        }
-
         if (!senderId || !senderRole) {
             return next(new AppError('Authentication required', 401, 'AUTH_ERROR'));
+        }
+
+        // Provider -> Admin convenience: if frontend does not have admin id yet, auto-resolve it.
+        if (!receiverId && isProviderToAdmin && senderRole === UserRole.PROVIDER) {
+            const admin = await findPrimaryAdmin();
+            if (!admin) {
+                return next(new AppError('No admin account is available for chat', 503, 'ADMIN_NOT_AVAILABLE'));
+            }
+            receiverId = admin.id;
+        }
+
+        if (!receiverId) {
+            return next(new AppError('Receiver ID is required', 400));
         }
 
         if (!Types.ObjectId.isValid(receiverId)) {
@@ -591,10 +640,6 @@ export const sendMessageWithImage = async (req: AuthRequest, res: Response, next
         }
 
         const receiverRole = receiver.role;
-        const routePath = (req.path || '').toLowerCase();
-        const isCustomerToProvider = routePath.endsWith('/customer-to-provider');
-        const isProviderToAdmin = routePath.endsWith('/provider-to-admin');
-        const isCustomerToAdmin = routePath.endsWith('/customer-to-admin');
 
         if (isCustomerToProvider && (senderRole !== UserRole.CUSTOMER || receiverRole !== UserRole.PROVIDER)) {
             return next(new AppError('This endpoint only allows customer to provider messaging', 403, 'ROLE_ERROR'));
@@ -612,16 +657,14 @@ export const sendMessageWithImage = async (req: AuthRequest, res: Response, next
             return next(new AppError('Providers can only message admins', 403, 'ROLE_ERROR'));
         }
 
-
         // 1. Determine Chat Room (Find or Create)
-        // Ensure participants are sorted or handled consistently if needed. Here rely on $all.
         let room = await ChatRoom.findOne({
             participants: { $all: [senderId, receiverId] }
         });
 
         if (!room) {
             room = await ChatRoom.create({
-                participants: [senderId, receiverId], // Create new room
+                participants: [senderId, receiverId],
                 isActive: true
             });
         }
@@ -640,7 +683,6 @@ export const sendMessageWithImage = async (req: AuthRequest, res: Response, next
                 uploadStream.end(file.buffer);
             });
         }
-
 
         // 3. Determine Message Type
         let messageType = 'TEXT';
@@ -679,3 +721,4 @@ export const sendMessageWithImage = async (req: AuthRequest, res: Response, next
         next(error);
     }
 };
+

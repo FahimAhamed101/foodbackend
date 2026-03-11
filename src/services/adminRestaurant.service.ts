@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 import { Order, OrderStatus } from '../models/order.model';
 import { Payment, PaymentStatus, PayoutStatus } from '../models/payment.model';
 import { ProviderProfile } from '../models/providerProfile.model';
+import { User, UserRole } from '../models/user.model';
 import { Food } from '../models/food.model';
 import { Review } from '../models/review.model';
 import AppError from '../utils/AppError';
@@ -180,7 +181,7 @@ class AdminRestaurantService {
         return profile;
     }
 
-    async approveRestaurant(restaurantId: string) {
+    async approveRestaurant(restaurantId: string, approvedBy?: string) {
         const objectId = new Types.ObjectId(restaurantId);
 
         const profile = await ProviderProfile.findOneAndUpdate(
@@ -199,10 +200,17 @@ class AdminRestaurantService {
             throw new AppError('Restaurant not found', 404);
         }
 
+        await User.findByIdAndUpdate(objectId, {
+            role: UserRole.PROVIDER,
+            isProviderApproved: true,
+            providerApprovedAt: new Date(),
+            providerApprovedBy: approvedBy || 'admin',
+        });
+
         return profile;
     }
 
-    async rejectRestaurant(restaurantId: string, reason: string) {
+    async rejectRestaurant(restaurantId: string, reason: string, reviewedBy?: string) {
         const objectId = new Types.ObjectId(restaurantId);
 
         const profile = await ProviderProfile.findOneAndUpdate(
@@ -219,6 +227,13 @@ class AdminRestaurantService {
         if (!profile) {
             throw new AppError('Restaurant not found', 404);
         }
+
+        await User.findByIdAndUpdate(objectId, {
+            role: UserRole.PROVIDER,
+            isProviderApproved: false,
+            providerApprovedBy: reviewedBy || 'admin',
+            $unset: { providerApprovedAt: 1 }
+        });
 
         return profile;
     }

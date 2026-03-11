@@ -23,7 +23,17 @@ class ProviderOnboardingService {
         if (parsed < min || parsed > max) return undefined;
         return Number(parsed.toFixed(6));
     }
+    private parseTaxRate(value: unknown): number | undefined {
+        if (value === undefined || value === null || value === '') return undefined;
 
+        const normalized = typeof value === 'string' ? value.replace('%', '').trim() : value;
+        const parsed = typeof normalized === 'number' ? normalized : Number(normalized);
+
+        if (!Number.isFinite(parsed)) return undefined;
+        if (parsed < 0 || parsed > 100) return undefined;
+
+        return Number(parsed.toFixed(2));
+    }
     private extractLocation(data: any): { lat: number; lng: number } | undefined {
         const latRaw =
             data?.location?.lat ??
@@ -100,9 +110,6 @@ class ProviderOnboardingService {
         // Generate & send OTP
         const rawOtp = generateOtp();
         const hashedOtp = hashOtp(rawOtp);
-        if (process.env.NODE_ENV !== 'production') {
-            console.log(`[ONBOARDING][OTP][DEBUG] email=${normalizedEmail} otp=${rawOtp}`);
-        }
 
         await Otp.deleteMany({ email: normalizedEmail, purpose: OtpPurpose.EMAIL_VERIFY });
 
@@ -120,6 +127,12 @@ class ProviderOnboardingService {
             message: `Welcome to DineFive! Your verification code is: ${rawOtp}. This code expires in 10 minutes.`,
             html: getOtpEmailTemplate(rawOtp, user.fullName || normalizedEmail.split('@')[0])
         });
+
+        if (process.env.NODE_ENV !== 'production') {
+            console.log(
+                `[ONBOARDING][REGISTER_EMAIL][OTP] email=${normalizedEmail} otp=${rawOtp} expiresAt=${expiresAt.toISOString()}`
+            );
+        }
 
         return {
             message: 'OTP sent to your email',
@@ -223,9 +236,20 @@ class ProviderOnboardingService {
         if (user.role !== UserRole.PROVIDER) throw new AppError('Only providers can submit info', 403);
 
         const location = this.extractLocation(data);
+        const cityTaxRate = this.parseTaxRate(data.cityTax ?? data.city_tax ?? data.taxRate ?? data.tax);
+        const restaurantName =
+            data.restaurantName ||
+            data.RestaurantName ||
+            data.resturantName ||
+            data.restaurant ||
+            '';
+
+        if (!restaurantName || !String(restaurantName).trim()) {
+            throw new AppError('Restaurant name is required', 400);
+        }
 
         const profileData: any = {
-            restaurantName: data.restaurantName,
+            restaurantName: String(restaurantName).trim(),
             contactEmail: data.email || data.contactEmail || user.email,
             phoneNumber: data.phoneNumber || data.PhoneNumebr || data.PhoneNumerb,
             restaurantAddress: data.restaurantAddress || data.RestaurantAddress,
@@ -236,6 +260,16 @@ class ProviderOnboardingService {
             verificationStatus: 'PENDING',
             isVerify: false,
         };
+
+        if (cityTaxRate !== undefined) {
+            profileData.cityTax = cityTaxRate;
+            profileData.compliance = {
+                tax: {
+                    region: profileData.city,
+                    rate: cityTaxRate,
+                },
+            };
+        }
 
         if (location) {
             profileData.location = location;
@@ -253,6 +287,8 @@ class ProviderOnboardingService {
             message: 'Restaurant info saved.',
             data: {
                 profileId: profile._id,
+                restaurantName: profile.restaurantName,
+                cityTax: profile.cityTax ?? 0,
                 nextStep: 'documents-upload',
             },
         };
@@ -456,3 +492,5 @@ class ProviderOnboardingService {
 }
 
 export default new ProviderOnboardingService();
+
+

@@ -10,6 +10,7 @@ export interface IProviderProfile extends Document {
     city: string;
     state: string;
     zipCode?: string;
+    cityTax?: number;
     verificationStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
     verificationDocuments: string[];
     isVerify: boolean;
@@ -77,6 +78,12 @@ const providerProfileSchema = new Schema<IProviderProfile>(
             type: String,
             trim: true,
         },
+        cityTax: {
+            type: Number,
+            min: 0,
+            max: 100,
+            default: 0,
+        },
         verificationStatus: {
             type: String,
             enum: ['PENDING', 'APPROVED', 'REJECTED'],
@@ -137,3 +144,4 @@ const providerProfileSchema = new Schema<IProviderProfile>(
 // Add any compound indexes here if needed in future.
 
 export const ProviderProfile = model<IProviderProfile>('ProviderProfile', providerProfileSchema);
+
