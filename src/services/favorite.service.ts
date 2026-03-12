@@ -29,11 +29,23 @@ class FavoriteService {
                 { $inc: { favoriteCount: 1 } }
             );
 
-            return favorite;
+            return {
+                favorite,
+                alreadyFavorited: false,
+            };
         } catch (error: any) {
-            // Handle Duplicate Key Error (MongoDB Code 11000)
+            // Duplicate favorite is treated as idempotent success.
             if (error.code === 11000) {
-                throw new AppError('Food already favorited', 400, 'ALREADY_FAVORITED');
+                const existing = await Favorite.findOne({
+                    userId: new Types.ObjectId(userId),
+                    foodId: new Types.ObjectId(foodId),
+                }).lean();
+
+                return {
+                    favorite: existing,
+                    alreadyFavorited: true,
+                    message: 'Food already favorited',
+                };
             }
             throw error;
         }
@@ -51,7 +63,10 @@ class FavoriteService {
         });
 
         if (!deleted) {
-            throw new AppError('Favorite not found', 404, 'FAVORITE_NOT_FOUND');
+            return {
+                message: 'Favorite not found',
+                removed: false,
+            };
         }
 
         // Atomically decrement favoriteCount, ensuring it doesn't go below 0
@@ -60,7 +75,10 @@ class FavoriteService {
             { $inc: { favoriteCount: -1 } }
         );
 
-        return { message: 'Removed from favorites' };
+        return {
+            message: 'Removed from favorites',
+            removed: true,
+        };
     }
 
     /**
@@ -77,7 +95,7 @@ class FavoriteService {
             { $match: { userId: new Types.ObjectId(userId) } },
 
             // 2. Sort by most recently favorited
-            { $sort: { createdAt: -1 as const } }, // Fix TS inference if needed
+            { $sort: { createdAt: -1 as const } },
 
             // 3. Pagination early to reduce lookup load
             {
@@ -109,8 +127,6 @@ class FavoriteService {
                                     image: '$food.image',
                                     finalPriceTag: '$food.finalPriceTag',
                                     favoriteCount: '$food.favoriteCount',
-                                    // rating will be handled if needed, for simplicity using basic fields
-                                    // The requirements asked for "Minimal optimized food payload"
                                 },
                             },
                         },

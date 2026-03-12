@@ -7,8 +7,8 @@ import { getFeedSchema } from '../validations/feed.validation';
 const router = express.Router();
 
 const feedLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, 
-    max: 100, 
+    windowMs: 15 * 60 * 1000,
+    max: 100,
     message: {
         success: false,
         errorCode: 'RATE_LIMIT_ERROR',
@@ -17,6 +17,7 @@ const feedLimiter = rateLimit({
 });
 
 router.use(feedLimiter);
+router.get('/home', validate(getFeedSchema), feedController.getHomeFeed);
 router.get('/', validate(getFeedSchema), feedController.getFeed);
 
 export default router;

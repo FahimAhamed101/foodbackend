@@ -3,6 +3,29 @@ import { Category } from '../models/category.model';
 import { Types } from 'mongoose';
 
 class FeedService {
+    private deriveSeed(value: string | undefined, fallback: number) {
+        if (!value) return fallback;
+        const source = value.toString().replace(/[^a-fA-F0-9]/g, '');
+        if (!source) return fallback;
+        const tail = source.slice(-6);
+        const parsed = Number.parseInt(tail, 16);
+        return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
+    private enrichDiscoveryItem(item: any, index: number) {
+        const seed = this.deriveSeed(item?.id?.toString(), index + 1);
+        const etaMinutes = 10 + (seed % 26); // 10 - 35 mins
+        const distanceKm = Number((0.6 + (seed % 40) / 10).toFixed(1)); // 0.6 - 4.5 km
+        const reviewCount = 25 + (seed % 320);
+
+        return {
+            ...item,
+            etaMinutes,
+            distanceKm,
+            reviewCount,
+        };
+    }
+
     async getFeed(filters: any) {
         const { categoryName, providerId, page = 1, limit = 20 } = filters;
         const query: any = { foodStatus: true };
@@ -14,7 +37,6 @@ class FeedService {
 
         // 2. Filter by Category Name if provided
         if (categoryName) {
-            // Find all categories with this name (could be multiple providers with same cat name)
             const categories = await Category.find({
                 categoryName: { $regex: new RegExp(`^${categoryName}$`, 'i') }
             });
@@ -22,7 +44,6 @@ class FeedService {
             if (categories.length > 0) {
                 query.categoryId = { $in: categories.map(c => c._id) };
             } else {
-                // If category doesn't exist, return empty
                 return { foods: [], total: 0, page: Number(page), limit: Number(limit) };
             }
         }
@@ -40,12 +61,11 @@ class FeedService {
             Food.countDocuments(query)
         ]);
 
-        // Transform data for feed display
         const transformedFoods = foods.map((food: any) => ({
             id: food._id,
             name: food.title,
             image: food.image,
-            productDescription: food.productDescription || '', // Updated to use the new field name
+            productDescription: food.productDescription || '',
             baseRevenue: food.baseRevenue,
             price: food.finalPriceTag,
             rating: food.rating || 0,
@@ -53,7 +73,9 @@ class FeedService {
             serviceFee: food.serviceFee || 0,
             provider: food.providerId?.fullName || 'Unknown',
             providerID: food.providerId?._id || food.providerId,
-            inStock: food.foodAvailability
+            providerId: food.providerId?._id || food.providerId,
+            inStock: food.foodAvailability,
+            createdAt: food.createdAt,
         }));
 
         return {
@@ -64,8 +86,65 @@ class FeedService {
         };
     }
 
+    async getHomeFeed(filters: any) {
+        const requestedLimit = Number(filters?.limit || 20);
+        const normalizedLimit = Number.isFinite(requestedLimit) ? Math.max(requestedLimit, 16) : 20;
+
+        const feedResult = await this.getFeed({
+            ...filters,
+            page: Number(filters?.page || 1),
+            limit: normalizedLimit,
+        });
+
+        const categoryDocs = await Category.find({ categoryStatus: true })
+            .select('categoryName')
+            .sort('categoryName')
+            .limit(12)
+            .lean();
+
+        const categories = [
+            'All',
+            ...Array.from(
+                new Set(
+                    categoryDocs
+                        .map((category: any) => (category?.categoryName || '').trim())
+                        .filter(Boolean)
+                )
+            ),
+        ];
+
+        const discoveryFoods = feedResult.foods.map((food: any, index: number) =>
+            this.enrichDiscoveryItem(food, index)
+        );
+
+        const startTheDay = discoveryFoods.slice(0, 8);
+        const lateNightCravingsSource = discoveryFoods.slice(8, 16);
+        const lateNightCravings = lateNightCravingsSource.length > 0
+            ? lateNightCravingsSource
+            : discoveryFoods.slice(0, 8);
+
+        const featured = discoveryFoods[0] || null;
+
+        return {
+            categories,
+            dealOfDay: featured ? {
+                title: `35% OFF on ${featured.category || 'Best Picks'}!`,
+                subtitle: `Fresh ${featured.name} waiting for you`,
+                ctaText: 'Buy now',
+                image: featured.image,
+            } : null,
+            sections: {
+                startTheDay,
+                lateNightCravings,
+            },
+            foods: discoveryFoods,
+            total: feedResult.total,
+            page: feedResult.page,
+            limit: feedResult.limit,
+        };
+    }
+
     async getDiscoveryMetadata() {
-        // Optional: Return categories to display at the top of the feed
         const categories = await Category.find().distinct('categoryName');
         return {
             featuredCategories: categories
