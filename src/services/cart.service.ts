@@ -1,4 +1,4 @@
-import { Cart } from '../models/cart.model';
+﻿import { Cart } from '../models/cart.model';
 import { Food } from '../models/food.model';
 import { ProviderProfile } from '../models/providerProfile.model';
 import { Types } from 'mongoose';
@@ -13,6 +13,13 @@ class CartService {
         const numeric = Number(value);
         if (!Number.isFinite(numeric) || numeric <= 0) return 0;
         return numeric > 1 ? numeric / 100 : numeric;
+    }
+
+    private parseFoodObjectId(foodId: string): Types.ObjectId {
+        if (!foodId || !Types.ObjectId.isValid(foodId)) {
+            throw new AppError('Invalid food id', 400, 'INVALID_FOOD_ID');
+        }
+        return new Types.ObjectId(foodId);
     }
 
     private extractProviderId(cart: any): Types.ObjectId | null {
@@ -105,7 +112,10 @@ class CartService {
     }
 
     async addToCart(userId: string, foodId: string, quantity: number) {
-        const food = await Food.findById(foodId);
+        const foodObjectId = this.parseFoodObjectId(foodId);
+        const safeQuantity = Math.max(1, Math.floor(Number(quantity) || 1));
+
+        const food = await Food.findById(foodObjectId);
         if (!food) {
             throw new AppError('Food item not found', 404, 'FOOD_NOT_FOUND');
         }
@@ -123,8 +133,8 @@ class CartService {
                 userId: new Types.ObjectId(userId),
                 items: [
                     {
-                        foodId: new Types.ObjectId(foodId),
-                        quantity,
+                        foodId: foodObjectId,
+                        quantity: safeQuantity,
                         price: food.finalPriceTag,
                     },
                 ],
@@ -132,17 +142,17 @@ class CartService {
         } else {
             // Check if item already exists in cart
             const existingItemIndex = cart.items.findIndex(
-                (item) => item.foodId.toString() === foodId
+                (item) => item.foodId.toString() === foodObjectId.toString()
             );
 
             if (existingItemIndex !== -1) {
                 // Increment quantity
-                cart.items[existingItemIndex].quantity += quantity;
+                cart.items[existingItemIndex].quantity += safeQuantity;
             } else {
                 // Add new item
                 cart.items.push({
-                    foodId: new Types.ObjectId(foodId),
-                    quantity,
+                    foodId: foodObjectId,
+                    quantity: safeQuantity,
                     price: food.finalPriceTag,
                 });
             }
@@ -157,6 +167,7 @@ class CartService {
      * Update item quantity (or remove if quantity = 0)
      */
     async updateCartItem(userId: string, foodId: string, quantity: number) {
+        const foodObjectId = this.parseFoodObjectId(foodId);
         const cart = await Cart.findOne({ userId: new Types.ObjectId(userId) });
 
         if (!cart) {
@@ -164,7 +175,7 @@ class CartService {
         }
 
         const itemIndex = cart.items.findIndex(
-            (item) => item.foodId.toString() === foodId
+            (item) => item.foodId.toString() === foodObjectId.toString()
         );
 
         if (itemIndex === -1) {
@@ -176,7 +187,7 @@ class CartService {
             cart.items.splice(itemIndex, 1);
         } else {
             // Update quantity
-            cart.items[itemIndex].quantity = quantity;
+            cart.items[itemIndex].quantity = Math.max(1, Math.floor(Number(quantity) || 1));
         }
 
         await cart.save();
@@ -188,6 +199,7 @@ class CartService {
      * Remove specific item from cart
      */
     async removeFromCart(userId: string, foodId: string) {
+        const foodObjectId = this.parseFoodObjectId(foodId);
         const cart = await Cart.findOne({ userId: new Types.ObjectId(userId) });
 
         if (!cart) {
@@ -195,7 +207,7 @@ class CartService {
         }
 
         cart.items = cart.items.filter(
-            (item) => item.foodId.toString() !== foodId
+            (item) => item.foodId.toString() !== foodObjectId.toString()
         );
 
         await cart.save();
