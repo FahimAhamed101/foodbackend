@@ -236,8 +236,9 @@ class AuthService {
         // Send OTP via Email
         await sendEmail({
             email: normalizedEmail,
-            subject: 'Resend Verification OTP',
-            message: `Your new verification code is: ${rawOtp}. This code expires in 10 minutes.`,
+            subject: 'DineFive - Verification OTP',
+            message: `Hi ${user.fullName || 'there'}, your new verification code is: ${rawOtp}. This code expires in 10 minutes.`,
+            html: getOtpEmailTemplate(rawOtp, user.fullName || 'Valued Member'),
         });
 
         return { message: 'Verification OTP resent successfully' };
