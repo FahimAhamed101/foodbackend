@@ -133,7 +133,8 @@ class ProviderService {
                 // Get food count for this provider
                 const foodCount = await Food.countDocuments({
                     providerId: provider.providerId,
-                    foodStatus: true
+                    foodStatus: { $ne: false },
+                    foodAvailability: { $ne: false }
                 });
 
                 providersWithDistance.push({

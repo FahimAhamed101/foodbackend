@@ -28,21 +28,34 @@ class FeedService {
     }
 
     async getFeed(filters: any) {
-        const { categoryName, providerId, page = 1, limit = 20 } = filters;
-        const query: any = { foodStatus: true, foodAvailability: true };
+        const {
+            categoryName,
+            category,
+            providerId,
+            restaurantId,
+            page = 1,
+            limit = 20
+        } = filters;
+        const resolvedCategoryName = categoryName || category;
+        const resolvedProviderId = providerId || restaurantId;
+        const query: any = {
+            foodStatus: { $ne: false },
+            foodAvailability: { $ne: false }
+        };
 
         // 1. Filter by Provider ID if provided
-        if (providerId) {
-            if (!Types.ObjectId.isValid(providerId)) {
+        if (resolvedProviderId) {
+            if (!Types.ObjectId.isValid(resolvedProviderId)) {
                 return { foods: [], total: 0, page: Number(page), limit: Number(limit) };
             }
-            query.providerId = new Types.ObjectId(providerId);
+            query.providerId = new Types.ObjectId(resolvedProviderId);
         }
 
         // 2. Filter by Category Name if provided
-        if (categoryName) {
+        if (resolvedCategoryName) {
             const categories = await Category.find({
-                categoryName: { $regex: new RegExp(`^${categoryName}$`, 'i') }
+                categoryStatus: true,
+                categoryName: { $regex: new RegExp(`^${resolvedCategoryName}$`, 'i') }
             });
 
             if (categories.length > 0) {
