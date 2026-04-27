@@ -8,7 +8,8 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "seed:states": "ts-node src/seedStates.ts",
-    "seed:admin": "ts-node seed-admin-test-data.ts",
+    "seed:db": "ts-node src/seedDatabase.ts",
+    "seed:admin": "ts-node src/seedDatabase.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -49,6 +50,7 @@
     "@types/node": "^25.0.8",
     "@types/nodemailer": "^7.0.5",
     "nodemon": "^3.1.11",
+    "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3"
   }

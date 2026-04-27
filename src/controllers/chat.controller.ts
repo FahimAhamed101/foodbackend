@@ -600,7 +600,7 @@ export const sendMessageWithImage = async (req: AuthRequest, res: Response, next
         const senderRole = req.user?.role;
         const routePath = (req.path || '').toLowerCase();
         const isCustomerToProvider = routePath.endsWith('/customer-to-provider');
-        const isProviderToAdmin = routePath.endsWith('/provider-to-admin');
+        const isProviderAdminThread = routePath.endsWith('/provider-to-admin');
         const isCustomerToAdmin = routePath.endsWith('/customer-to-admin');
 
         // If 'Text' (capitalized) is sent from Postman form-data, accept it
@@ -618,7 +618,7 @@ export const sendMessageWithImage = async (req: AuthRequest, res: Response, next
         }
 
         // Provider -> Admin convenience: if frontend does not have admin id yet, auto-resolve it.
-        if (!receiverId && isProviderToAdmin && senderRole === UserRole.PROVIDER) {
+        if (!receiverId && isProviderAdminThread && senderRole === UserRole.PROVIDER) {
             const admin = await findPrimaryAdmin();
             if (!admin) {
                 return next(new AppError('No admin account is available for chat', 503, 'ADMIN_NOT_AVAILABLE'));
@@ -645,8 +645,14 @@ export const sendMessageWithImage = async (req: AuthRequest, res: Response, next
             return next(new AppError('This endpoint only allows customer to provider messaging', 403, 'ROLE_ERROR'));
         }
 
-        if (isProviderToAdmin && (senderRole !== UserRole.PROVIDER || receiverRole !== UserRole.ADMIN)) {
-            return next(new AppError('This endpoint only allows provider to admin messaging', 403, 'ROLE_ERROR'));
+        if (
+            isProviderAdminThread &&
+            !(
+                (senderRole === UserRole.PROVIDER && receiverRole === UserRole.ADMIN) ||
+                (senderRole === UserRole.ADMIN && receiverRole === UserRole.PROVIDER)
+            )
+        ) {
+            return next(new AppError('This endpoint only allows provider and admin messaging', 403, 'ROLE_ERROR'));
         }
 
         if (isCustomerToAdmin && (senderRole !== UserRole.CUSTOMER || receiverRole !== UserRole.ADMIN)) {
