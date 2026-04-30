@@ -1,10 +1,11 @@
 import { Response, Request } from 'express';
 import { catchAsync } from '../utils/catchAsync';
 import feedService from '../services/feed.service';
+import { getRequestBaseUrl } from '../utils/mediaUrl';
 
 class FeedController {
     getFeed = catchAsync(async (req: Request, res: Response) => {
-        const result = await feedService.getFeed(req.query);
+        const result = await feedService.getFeed(req.query, getRequestBaseUrl(req));
 
         res.status(200).json({
             success: true,
@@ -18,7 +19,7 @@ class FeedController {
     });
 
     getHomeFeed = catchAsync(async (req: Request, res: Response) => {
-        const result = await feedService.getHomeFeed(req.query);
+        const result = await feedService.getHomeFeed(req.query, getRequestBaseUrl(req));
 
         res.status(200).json({
             success: true,

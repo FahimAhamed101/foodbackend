@@ -1,7 +1,8 @@
-﻿import { Food } from '../models/food.model';
+import { Food } from '../models/food.model';
 import { Category } from '../models/category.model';
 import { ProviderProfile } from '../models/providerProfile.model';
 import { Types } from 'mongoose';
+import { toPublicMediaUrl } from '../utils/mediaUrl';
 
 class FeedService {
     private deriveSeed(value: string | undefined, fallback: number) {
@@ -27,7 +28,27 @@ class FeedService {
         };
     }
 
-    async getFeed(filters: any) {
+    private normalizeFeedItemImages(item: any, baseUrl: string) {
+        const foodImage = toPublicMediaUrl(item?.image, baseUrl);
+        const providerImage = toPublicMediaUrl(item?.providerImage, baseUrl);
+        const restaurantImage = toPublicMediaUrl(
+            item?.restaurantImage || item?.providerProfile || item?.profile,
+            baseUrl
+        );
+
+        return {
+            ...item,
+            image: foodImage,
+            foodImage,
+            providerImage,
+            restaurantImage,
+            restaurantProfile: restaurantImage,
+            providerProfile: restaurantImage,
+            profile: restaurantImage,
+        };
+    }
+
+    async getFeed(filters: any, baseUrl = '') {
         const {
             categoryName,
             category,
@@ -70,7 +91,7 @@ class FeedService {
         const [foods, total] = await Promise.all([
             Food.find(query)
                 .populate('categoryId', 'categoryName')
-                .populate('providerId', 'fullName')
+                .populate('providerId', 'fullName profilePic googlePicture')
                 .sort({ rating: -1, createdAt: -1 })
                 .skip(skip)
                 .limit(Number(limit))
@@ -109,7 +130,7 @@ class FeedService {
             const providerDisplayName =
                 providerProfile?.restaurantName || food.providerId?.fullName || 'Unknown';
 
-            return {
+            return this.normalizeFeedItemImages({
                 id: String(food._id),
                 _id: String(food._id),
                 foodId: String(food._id),
@@ -129,6 +150,16 @@ class FeedService {
                 providerRestaurantName: providerProfile?.restaurantName || '',
                 restaurantName: providerProfile?.restaurantName || providerDisplayName,
                 restaurantAddress: providerProfile?.restaurantAddress || '',
+                providerImage:
+                    food.providerId?.profilePic ||
+                    food.providerId?.googlePicture ||
+                    providerProfile?.profile ||
+                    '',
+                restaurantImage:
+                    providerProfile?.profile ||
+                    food.providerId?.profilePic ||
+                    food.providerId?.googlePicture ||
+                    '',
                 providerProfile: providerProfile?.profile || '',
                 profile: providerProfile?.profile || '',
                 providerID: providerIdString,
@@ -137,7 +168,7 @@ class FeedService {
                 foodStatus: !!food.foodStatus,
                 foodAvailability: !!food.foodAvailability,
                 createdAt: food.createdAt,
-            };
+            }, baseUrl);
         });
 
         return {
@@ -148,7 +179,7 @@ class FeedService {
         };
     }
 
-    async getHomeFeed(filters: any) {
+    async getHomeFeed(filters: any, baseUrl = '') {
         const requestedLimit = Number(filters?.limit || 20);
         const normalizedLimit = Number.isFinite(requestedLimit) ? Math.max(requestedLimit, 16) : 20;
 
@@ -156,7 +187,7 @@ class FeedService {
             ...filters,
             page: Number(filters?.page || 1),
             limit: normalizedLimit,
-        });
+        }, baseUrl);
 
         const categoryDocs = await Category.find({ categoryStatus: true })
             .select('categoryName')
