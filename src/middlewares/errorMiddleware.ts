@@ -1,6 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 
 const globalErrorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
+    if (err && err.code === 'LIMIT_FILE_SIZE') {
+        err.statusCode = 413;
+        err.status = 'fail';
+        err.errorCode = 'FILE_TOO_LARGE';
+        err.message = 'Uploaded file is too large. Maximum size is 50MB.';
+    }
+
     err.statusCode = err.statusCode || 500;
     err.status = err.status || 'error';
     err.errorCode = err.errorCode || 'INTERNAL_SERVER_ERROR';

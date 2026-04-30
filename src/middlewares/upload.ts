@@ -31,6 +31,7 @@ export const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: {
-        fileSize: 20 * 1024 * 1024 // Increased to 20MB for larger documents
+        fileSize: 50 * 1024 * 1024, // Increased to 50MB for larger documents and image uploads
+        fieldSize: 200 * 1024, // Allow reasonable text payload per field in multipart form-data
     }
 });

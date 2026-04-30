@@ -62,8 +62,9 @@ if (config.env === 'development') {
 // Stripe webhook needs raw body - must be before express.json()
 app.use('/api/v1/stripe/webhook', express.raw({ type: 'application/json' }));
 
-app.use(express.json({ limit: '10kb' }));
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+// Allow larger request bodies for profile updates, provider onboarding, and admin forms
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // 2) ROUTES
 app.use('/api/v1/stripe', stripeRoutes);
