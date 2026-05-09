@@ -89,7 +89,7 @@ class PaymentRepository {
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit)
-                .select('createdAt orderId paymentId totalAmount status netAmount commission payoutStatus')
+                .select('createdAt orderId paymentId totalAmount donationAmount status netAmount commission payoutStatus')
                 .lean(),
             Payment.countDocuments({ providerId }),
         ]);
@@ -101,6 +101,7 @@ class PaymentRepository {
                 orderId: p.orderId,
                 dateTime: p.createdAt,
                 amount: p.totalAmount,
+                donationAmount: p.donationAmount || 0,
                 netAmount: p.netAmount,
                 commission: p.commission,
                 status: p.status,
@@ -133,7 +134,7 @@ class PaymentRepository {
         })
             .sort({ createdAt: -1 })
             .limit(20) // Limit search results
-            .select('createdAt orderId paymentId totalAmount status netAmount payoutStatus')
+            .select('createdAt orderId paymentId totalAmount donationAmount status netAmount payoutStatus')
             .lean();
 
         return results;

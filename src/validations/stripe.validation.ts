@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+const donationAmountSchema = z.number()
+    .finite('Donation amount must be a valid number')
+    .min(0, 'Donation amount cannot be negative')
+    .max(10000, 'Donation amount is too large')
+    .optional()
+    .default(0);
+
 export const createPaymentIntentSchema = z.object({
     body: z.object({
         providerId: z.string().min(1, 'Provider ID is required'),
@@ -9,6 +16,7 @@ export const createPaymentIntentSchema = z.object({
                 quantity: z.number().int().min(1, 'Quantity must be at least 1'),
             })
         ).min(1, 'At least one item is required'),
+        donationAmount: donationAmountSchema,
     }),
 });
 

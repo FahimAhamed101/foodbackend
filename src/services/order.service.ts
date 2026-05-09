@@ -13,7 +13,10 @@ class OrderService {
         items: { foodId: string; quantity: number; price: number }[];
         paymentMethod: string;
         logisticsType: string;
+        donationAmount?: number;
     }) {
+        const donationAmount = this.roundMoney(orderData.donationAmount || 0);
+
         // Fetch platform fee config
         const feeConfig = await systemConfigService.getPlatformFeeConfig();
         const feeValue = feeConfig.value || 0;
@@ -66,7 +69,7 @@ class OrderService {
         }
 
         // Calculate final total
-        const totalPrice = subtotal + totalPlatformFee + stateTax;
+        const totalPrice = subtotal + totalPlatformFee + stateTax + donationAmount;
 
         const order = await Order.create({
             customerId: new Types.ObjectId(customerId),
@@ -75,6 +78,7 @@ class OrderService {
             subtotal: parseFloat(subtotal.toFixed(2)),
             platformFee: parseFloat(totalPlatformFee.toFixed(2)),
             stateTax: parseFloat(stateTax.toFixed(2)),
+            donationAmount,
             totalPrice: parseFloat(totalPrice.toFixed(2)),
             state: customerState,
             status: OrderStatus.PENDING,
@@ -90,6 +94,10 @@ class OrderService {
         await notificationService.createNotification(order.providerId, UserRole.PROVIDER, order._id as Types.ObjectId, OrderStatus.PENDING, pTitle, pMessage);
 
         return order;
+    }
+
+    private roundMoney(value: number): number {
+        return Number.isFinite(value) ? parseFloat(value.toFixed(2)) : 0;
     }
 
     async updateStatus(orderId: string, providerId: string, newStatus: OrderStatus) {
@@ -266,6 +274,7 @@ class OrderService {
                 orderId: 1,
                 customerName: '$customerInfo.fullName',
                 logisticsType: 1,
+                donationAmount: 1,
                 totalPrice: 1,
                 status: 1,
                 createdAt: 1,

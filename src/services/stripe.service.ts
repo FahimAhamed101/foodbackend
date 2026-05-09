@@ -17,13 +17,15 @@ interface CreatePaymentIntentData {
     customerId: string;
     providerId: string;
     items: { foodId: string; quantity: number }[];
+    donationAmount?: number;
 }
 
 interface PriceBreakdown {
     subtotal: number; // baseRevenue + serviceFee (customer pays before tax)
     platformFee: number; // $0.50 × quantity (admin gets, deducted from baseRevenue)
     stateTax: number; // subtotal × taxRate (admin gets)
-    total: number; // subtotal + tax (customer pays)
+    donationAmount: number; // optional checkout donation
+    total: number; // subtotal + tax + donation (customer pays)
     vendorAmount: number; // (baseRevenue - platformFee) + serviceFee (restaurant gets)
     state: string;
     items: {
@@ -51,8 +53,11 @@ class StripeService {
      */
     async calculatePriceBreakdown(
         customerId: string,
-        items: { foodId: string; quantity: number }[]
+        items: { foodId: string; quantity: number }[],
+        donationAmount: number = 0
     ): Promise<PriceBreakdown> {
+        const safeDonationAmount = this.roundMoney(donationAmount);
+
         // Fetch food items from DB (NEVER trust frontend prices)
         const foodIds = items.map(item => new Types.ObjectId(item.foodId));
         const foods = await Food.find({ _id: { $in: foodIds } });
@@ -133,8 +138,8 @@ class StripeService {
         // Tax is calculated on subtotal (baseRevenue + serviceFee)
         const stateTax = subtotal * stateTaxRate;
         
-        // Total customer pays: subtotal + tax
-        const total = subtotal + stateTax;
+        // Total customer pays: subtotal + tax + optional donation
+        const total = subtotal + stateTax + safeDonationAmount;
         
         // Restaurant gets: (baseRevenue - platformFee) + serviceFee
         const vendorAmount = totalVendorRevenue;
@@ -143,6 +148,7 @@ class StripeService {
             subtotal: parseFloat(subtotal.toFixed(2)),
             platformFee: parseFloat(totalPlatformFee.toFixed(2)),
             stateTax: parseFloat(stateTax.toFixed(2)),
+            donationAmount: safeDonationAmount,
             total: parseFloat(total.toFixed(2)),
             vendorAmount: parseFloat(vendorAmount.toFixed(2)),
             state: customerState,
@@ -155,9 +161,10 @@ class StripeService {
      */
     async createPaymentIntent(data: CreatePaymentIntentData) {
         const { customerId, providerId, items } = data;
+        const donationAmount = this.roundMoney(data.donationAmount || 0);
 
         // Calculate price breakdown (backend-validated prices)
-        const breakdown = await this.calculatePriceBreakdown(customerId, items);
+        const breakdown = await this.calculatePriceBreakdown(customerId, items, donationAmount);
 
         // Create Stripe PaymentIntent
         const paymentIntent = await stripe.paymentIntents.create({
@@ -173,6 +180,7 @@ class StripeService {
                 subtotal: breakdown.subtotal.toString(),
                 platformFee: breakdown.platformFee.toString(),
                 stateTax: breakdown.stateTax.toString(),
+                donationAmount: breakdown.donationAmount.toString(),
                 vendorAmount: breakdown.vendorAmount.toString(),
                 items: JSON.stringify(items),
             },
@@ -199,9 +207,10 @@ class StripeService {
         const providerId = metadata.providerId;
         const state = metadata.state;
         const items = JSON.parse(metadata.items);
+        const donationAmount = this.parseDonationAmount(metadata.donationAmount);
 
         // Recalculate to ensure integrity (prevent metadata tampering)
-        const breakdown = await this.calculatePriceBreakdown(customerId, items);
+        const breakdown = await this.calculatePriceBreakdown(customerId, items, donationAmount);
 
         // Verify amount matches
         const expectedAmount = Math.round(breakdown.total * 100);
@@ -230,6 +239,7 @@ class StripeService {
             subtotal: breakdown.subtotal,
             platformFee: breakdown.platformFee,
             stateTax: breakdown.stateTax,
+            donationAmount: breakdown.donationAmount,
             totalPrice: breakdown.total,
             vendorAmount: breakdown.vendorAmount,
             state,
@@ -252,6 +262,7 @@ class StripeService {
             providerId: new Types.ObjectId(providerId),
             customerId: new Types.ObjectId(customerId),
             totalAmount: breakdown.total,
+            donationAmount: breakdown.donationAmount,
             commission: breakdown.platformFee,
             netAmount: breakdown.vendorAmount,
             vendorAmount: breakdown.vendorAmount,
@@ -388,6 +399,7 @@ class StripeService {
             orderId: order?.orderId,
             orderStatus: order?.status,
             paymentStatus: order?.paymentStatus,
+            donationAmount: order?.donationAmount || Number(paymentIntent.metadata?.donationAmount || 0),
         };
     }
 
@@ -432,6 +444,14 @@ class StripeService {
             amount: refund.amount / 100,
             status: refund.status,
         };
+    }
+
+    private roundMoney(value: number): number {
+        return Number.isFinite(value) ? parseFloat(value.toFixed(2)) : 0;
+    }
+
+    private parseDonationAmount(value: string | undefined): number {
+        return this.roundMoney(Number(value || 0));
     }
 }
 

@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+const donationAmountSchema = z.number()
+    .finite('Donation amount must be a valid number')
+    .min(0, 'Donation amount cannot be negative')
+    .max(10000, 'Donation amount is too large')
+    .optional()
+    .default(0);
+
 export const getOrdersQuerySchema = z.object({
     query: z.object({
         orderId: z.string().optional(),
@@ -19,6 +26,7 @@ export const createOrderSchema = z.object({
         })).min(1),
         paymentMethod: z.string().min(1),
         logisticsType: z.string().min(1),
+        donationAmount: donationAmountSchema,
     }),
 });
 

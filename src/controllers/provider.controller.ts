@@ -35,6 +35,37 @@ class ProviderController {
             }
         });
     });
+
+    /**
+     * Get nearby restaurants with donated checkout food.
+     * POST /api/v1/provider/donated-foods/nearby
+     */
+    getNearbyDonatedFoods = catchAsync(async (req: Request, res: Response) => {
+        const { latitude, longitude, radius, page, limit, cuisine, sortBy } = req.body;
+
+        const result = await providerService.getNearbyDonatedFoods({
+            latitude,
+            longitude,
+            radius,
+            page,
+            limit,
+            cuisine,
+            sortBy
+        });
+
+        res.status(200).json({
+            success: true,
+            message: `Found ${result.pagination.total} donated food spots within ${radius} km`,
+            data: result.donatedFoods,
+            pagination: result.pagination,
+            filters: {
+                radius: `${radius} km`,
+                cuisine: cuisine || 'all',
+                sortBy
+            }
+        });
+    });
+
     getCustomerDetails = catchAsync(async (req: AuthRequest, res: Response) => {
         const providerId = req.user!.userId;
         const customerId = req.params.customerId;

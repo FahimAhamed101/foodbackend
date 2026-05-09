@@ -19,6 +19,7 @@ export interface IPayment extends Document {
     providerId: Types.ObjectId;
     customerId: Types.ObjectId;
     totalAmount: number;
+    donationAmount: number;
     commission: number;
     netAmount: number;
     vendorAmount: number;
@@ -64,6 +65,11 @@ const paymentSchema = new Schema<IPayment>(
         totalAmount: {
             type: Number,
             required: true,
+        },
+        donationAmount: {
+            type: Number,
+            default: 0,
+            min: 0,
         },
         commission: {
             type: Number,

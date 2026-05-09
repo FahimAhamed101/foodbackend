@@ -30,6 +30,7 @@ export interface IOrder extends Document {
     subtotal: number;
     platformFee: number;
     stateTax: number;
+    donationAmount: number;
     totalPrice: number;
     vendorAmount: number;
     status: OrderStatus;
@@ -85,6 +86,11 @@ const orderSchema = new Schema<IOrder>(
         stateTax: {
             type: Number,
             default: 0,
+        },
+        donationAmount: {
+            type: Number,
+            default: 0,
+            min: 0,
         },
         totalPrice: {
             type: Number,
@@ -157,6 +163,7 @@ const orderSchema = new Schema<IOrder>(
 orderSchema.index({ providerId: 1, status: 1, createdAt: -1 });
 orderSchema.index({ customerId: 1, status: 1, createdAt: -1 });
 orderSchema.index({ createdAt: 1 });
+orderSchema.index({ donationAmount: 1, providerId: 1 });
 
 orderSchema.index({ providerId: 1, createdAt: -1 });
 

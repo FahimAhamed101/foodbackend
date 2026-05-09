@@ -31,6 +31,31 @@ interface ProviderWithDistance {
     availableFoods?: number;
 }
 
+interface DonatedFoodSummary {
+    foodId: string;
+    title: string;
+    image: string;
+    quantity: number;
+}
+
+interface DonatedFoodSpot extends ProviderWithDistance {
+    donatedMealCount: number;
+    totalDonationAmount: number;
+    donationOrderCount: number;
+    donatedFoodCount: number;
+    donatedFoods: DonatedFoodSummary[];
+    recentDonatedFoods: DonatedFoodSummary[];
+}
+
+interface DonationAccumulator {
+    providerId: string;
+    donatedMealCount: number;
+    totalDonationAmount: number;
+    donationOrderCount: number;
+    donatedFoods: DonatedFoodSummary[];
+    donatedFoodById: Map<string, DonatedFoodSummary>;
+}
+
 class ProviderService {
     private async getCustomerAvatarMap(customerIds: string[]) {
         const uniqueCustomerIds = Array.from(new Set(customerIds.filter(Boolean)));
@@ -182,6 +207,223 @@ class ProviderService {
                 hasNextPage: page < totalPages,
                 hasPrevPage: page > 1
             }
+        };
+    }
+
+    /**
+     * Get providers near the customer that have checkout donations.
+     */
+    async getNearbyDonatedFoods(input: NearbyProvidersInput) {
+        const { latitude, longitude, radius, page = 1, limit = 20, cuisine, sortBy = 'distance' } = input;
+
+        if (!isValidCoordinates(latitude, longitude)) {
+            throw new AppError('Invalid coordinates provided', 400, 'INVALID_COORDINATES');
+        }
+
+        const donatedOrders = await Order.find({
+            donationAmount: { $gt: 0 },
+            status: { $ne: OrderStatus.CANCELLED },
+        })
+            .select('providerId items donationAmount')
+            .populate('items.foodId', 'title image')
+            .sort({ createdAt: -1 })
+            .lean();
+
+        if (donatedOrders.length === 0) {
+            return {
+                donatedFoods: [],
+                pagination: {
+                    total: 0,
+                    page,
+                    limit,
+                    totalPages: 0,
+                    hasNextPage: false,
+                    hasPrevPage: false,
+                },
+            };
+        }
+
+        const donationByProvider = new Map<string, DonationAccumulator>();
+
+        for (const order of donatedOrders as any[]) {
+            const providerId = order.providerId?.toString?.() || String(order.providerId || '');
+            if (!providerId) continue;
+
+            let current = donationByProvider.get(providerId);
+            if (!current) {
+                current = {
+                    providerId,
+                    donatedMealCount: 0,
+                    totalDonationAmount: 0,
+                    donationOrderCount: 0,
+                    donatedFoods: [],
+                    donatedFoodById: new Map<string, DonatedFoodSummary>(),
+                };
+                donationByProvider.set(providerId, current);
+            }
+
+            current.totalDonationAmount += Number(order.donationAmount || 0);
+            current.donationOrderCount += 1;
+
+            for (const item of order.items || []) {
+                const quantity = Number(item.quantity || 0);
+                if (!Number.isFinite(quantity) || quantity <= 0) continue;
+
+                current.donatedMealCount += quantity;
+
+                const food = item.foodId as any;
+                const foodId = food?._id?.toString?.() || food?.toString?.() || String(item.foodId || '');
+                if (!foodId) continue;
+
+                const existingFood = current.donatedFoodById.get(foodId);
+                if (existingFood) {
+                    existingFood.quantity += quantity;
+                    continue;
+                }
+
+                const donatedFood = {
+                    foodId,
+                    title: String(food?.title || 'Donated item'),
+                    image: String(food?.image || ''),
+                    quantity,
+                };
+
+                current.donatedFoodById.set(foodId, donatedFood);
+                current.donatedFoods.push(donatedFood);
+            }
+
+        }
+
+        const providerObjectIds = Array.from(donationByProvider.keys())
+            .filter((providerId) => Types.ObjectId.isValid(providerId))
+            .map((providerId) => new Types.ObjectId(providerId));
+
+        if (providerObjectIds.length === 0) {
+            return {
+                donatedFoods: [],
+                pagination: {
+                    total: 0,
+                    page,
+                    limit,
+                    totalPages: 0,
+                    hasNextPage: false,
+                    hasPrevPage: false,
+                },
+            };
+        }
+
+        const query: any = {
+            providerId: { $in: providerObjectIds },
+            isActive: true,
+            status: 'ACTIVE',
+            verificationStatus: { $in: ['APPROVED', 'ACTIVE'] },
+            'location.lat': { $exists: true, $ne: null },
+            'location.lng': { $exists: true, $ne: null },
+        };
+
+        if (cuisine) {
+            const matchingCategories = await Category.find({
+                categoryName: { $regex: new RegExp(`^${cuisine}$`, 'i') },
+            }).select('providerId').lean();
+
+            const providerIdsWithCategory = matchingCategories.map(c => c.providerId);
+
+            query.$or = [
+                { cuisine: { $in: [new RegExp(`^${cuisine}$`, 'i')] } },
+                { providerId: { $in: providerIdsWithCategory } },
+            ];
+        }
+
+        const [providers, foodCountRows] = await Promise.all([
+            ProviderProfile.find(query)
+                .select('providerId restaurantName location cuisine restaurantAddress city state phoneNumber contactEmail profile isVerify verificationStatus')
+                .lean(),
+            Food.aggregate<{ _id: Types.ObjectId; count: number }>([
+                {
+                    $match: {
+                        providerId: { $in: providerObjectIds },
+                        foodStatus: { $ne: false },
+                        foodAvailability: { $ne: false },
+                    },
+                },
+                { $group: { _id: '$providerId', count: { $sum: 1 } } },
+            ]),
+        ]);
+
+        const foodCountByProvider = new Map(
+            foodCountRows.map((row) => [row._id.toString(), row.count])
+        );
+
+        const donatedFoodsWithDistance: DonatedFoodSpot[] = [];
+
+        for (const provider of providers) {
+            if (typeof provider.location?.lat !== 'number' || typeof provider.location?.lng !== 'number') {
+                continue;
+            }
+
+            const providerId = provider.providerId.toString();
+            const donation = donationByProvider.get(providerId);
+            if (!donation) continue;
+
+            const distance = calculateDistance(
+                { lat: latitude, lng: longitude },
+                { lat: provider.location.lat, lng: provider.location.lng }
+            );
+
+            if (distance > radius) continue;
+
+            const donatedFoods = donation.donatedFoods;
+
+            donatedFoodsWithDistance.push({
+                providerId,
+                restaurantName: provider.restaurantName,
+                location: {
+                    lat: provider.location.lat,
+                    lng: provider.location.lng,
+                },
+                distance,
+                cuisine: provider.cuisine || [],
+                restaurantAddress: provider.restaurantAddress,
+                city: provider.city,
+                state: provider.state,
+                phoneNumber: provider.phoneNumber,
+                contactEmail: provider.contactEmail,
+                profile: provider.profile,
+                isVerify: provider.isVerify,
+                verificationStatus: provider.verificationStatus,
+                availableFoods: foodCountByProvider.get(providerId) || 0,
+                donatedMealCount: donation.donatedMealCount,
+                totalDonationAmount: Number(donation.totalDonationAmount.toFixed(2)),
+                donationOrderCount: donation.donationOrderCount,
+                donatedFoodCount: donatedFoods.length,
+                donatedFoods,
+                recentDonatedFoods: donatedFoods,
+            });
+        }
+
+        if (sortBy === 'distance') {
+            donatedFoodsWithDistance.sort((a, b) => a.distance - b.distance);
+        } else if (sortBy === 'name') {
+            donatedFoodsWithDistance.sort((a, b) => a.restaurantName.localeCompare(b.restaurantName));
+        } else if (sortBy === 'rating') {
+            donatedFoodsWithDistance.sort((a, b) => b.totalDonationAmount - a.totalDonationAmount);
+        }
+
+        const total = donatedFoodsWithDistance.length;
+        const totalPages = Math.ceil(total / limit);
+        const skip = (page - 1) * limit;
+        const paginatedDonatedFoods = donatedFoodsWithDistance.slice(skip, skip + limit);
+
+        return {
+            donatedFoods: paginatedDonatedFoods,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages,
+                hasNextPage: page < totalPages,
+                hasPrevPage: page > 1,
+            },
         };
     }
     async getCustomerDetails(providerId: string, customerId: string) {
@@ -360,6 +602,7 @@ class ProviderService {
                     quantity: item.quantity,
                     price: item.price
                 })),
+                donationAmount: order.donationAmount || 0,
                 totalAmount: order.totalPrice,
                 paymentMethod: order.paymentMethod,
                 pickupTime: order.pickupTime
@@ -433,6 +676,7 @@ class ProviderService {
                     quantity: item.quantity,
                     price: item.price
                 })),
+                donationAmount: order.donationAmount || 0,
                 totalAmount: order.totalPrice,
                 paymentMethod: order.paymentMethod,
                 pickupTime: order.pickupTime

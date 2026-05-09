@@ -25,6 +25,7 @@ interface OrderDetailsResponse {
         subtotal: number;
         stateTax: number;
         platformFee: number;
+        donationAmount: number;
         total: number;
     };
     customer: {
@@ -81,6 +82,7 @@ class AdminOrderService {
         const subtotal = order.subtotal || 0;
         const platformFee = order.platformFee || 0;
         const stateTax = order.stateTax || 0;
+        const donationAmount = order.donationAmount || 0;
         const total = order.totalPrice;
 
         // 5. Format Timeline
@@ -114,6 +116,7 @@ class AdminOrderService {
                 subtotal: parseFloat(subtotal.toFixed(2)),
                 stateTax: parseFloat(stateTax.toFixed(2)),
                 platformFee: parseFloat(platformFee.toFixed(2)),
+                donationAmount: parseFloat(donationAmount.toFixed(2)),
                 total: parseFloat(total.toFixed(2))
             },
             customer: {

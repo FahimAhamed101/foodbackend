@@ -25,6 +25,7 @@ const providerLimiter = rateLimit({
 
 // Public route - no authentication required for searching nearby providers
 router.post('/nearby', validate(nearbyProvidersSchema), providerController.getNearbyProviders);
+router.post('/donated-foods/nearby', validate(nearbyProvidersSchema), providerController.getNearbyDonatedFoods);
 
 // Protected routes - require authentication
 router.use(authenticate);

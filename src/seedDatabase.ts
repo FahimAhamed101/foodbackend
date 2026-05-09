@@ -810,7 +810,15 @@ const seedNotifications = async (
     customerIds: Types.ObjectId[],
     orders: Array<{ _id: unknown; orderId: string; providerId: unknown; customerId: unknown; status: OrderStatus }>
 ) => {
-    const notifications = orders.flatMap((order, index) => [
+    const notifications: Array<{
+        userId: Types.ObjectId;
+        type: NotificationType;
+        orderId?: Types.ObjectId;
+        orderStatus?: OrderStatus;
+        title: string;
+        message: string;
+        isRead: boolean;
+    }> = orders.flatMap((order, index) => [
         {
             userId: toObjectId(order.customerId),
             type: NotificationType.ORDER,

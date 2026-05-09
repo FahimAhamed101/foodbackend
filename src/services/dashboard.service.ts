@@ -157,7 +157,7 @@ class DashboardService {
             .sort({ createdAt: -1 })
             .limit(5)
             .populate('customerId', 'fullName email profilePic googlePicture')
-            .select('orderId customerId logisticsType paymentMethod status totalPrice createdAt');
+            .select('orderId customerId logisticsType paymentMethod status donationAmount totalPrice createdAt');
 
         return recentOrders.map(order => {
             const customer = order.customerId as any;
@@ -168,6 +168,7 @@ class DashboardService {
                 logisticsType: order.logisticsType,
                 paymentMethod: order.paymentMethod,
                 status: order.status,
+                donationAmount: order.donationAmount || 0,
                 totalPrice: order.totalPrice,
                 createdAt: order.createdAt,
             };
