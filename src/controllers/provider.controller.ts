@@ -56,14 +56,9 @@ class ProviderController {
 
         res.status(200).json({
             success: true,
-            message: `Found ${result.pagination.total} donated food spots within ${radius} km`,
+            message: `Found ${result.pagination.total} donated foods`,
             data: result.donatedFoods,
-            pagination: result.pagination,
-            filters: {
-                radius: `${radius} km`,
-                cuisine: cuisine || 'all',
-                sortBy
-            }
+            pagination: result.pagination
         });
     });
 

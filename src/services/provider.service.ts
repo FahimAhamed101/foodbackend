@@ -36,6 +36,11 @@ interface DonatedFoodSummary {
     title: string;
     image: string;
     quantity: number;
+    productDescription: string;
+    price: number;
+    finalPriceTag: number;
+    rating: number;
+    inStock: boolean;
 }
 
 interface DonatedFoodSpot extends ProviderWithDistance {
@@ -45,6 +50,23 @@ interface DonatedFoodSpot extends ProviderWithDistance {
     donatedFoodCount: number;
     donatedFoods: DonatedFoodSummary[];
     recentDonatedFoods: DonatedFoodSummary[];
+}
+
+interface DonatedFoodCard extends DonatedFoodSummary {
+    id: string;
+    name: string;
+    donatedQuantity: number;
+    providerId: string;
+    providerName: string;
+    restaurantName: string;
+    restaurantAddress: string;
+    city: string;
+    state: string;
+    distance: number;
+    cuisine: string[];
+    totalDonationAmount: number;
+    donationOrderCount: number;
+    providerProfile: string;
 }
 
 interface DonationAccumulator {
@@ -213,19 +235,22 @@ class ProviderService {
     /**
      * Get providers near the customer that have checkout donations.
      */
-    async getNearbyDonatedFoods(input: NearbyProvidersInput) {
-        const { latitude, longitude, radius, page = 1, limit = 20, cuisine, sortBy = 'distance' } = input;
-
-        if (!isValidCoordinates(latitude, longitude)) {
-            throw new AppError('Invalid coordinates provided', 400, 'INVALID_COORDINATES');
-        }
+    async getNearbyDonatedFoods(input: Partial<NearbyProvidersInput>) {
+        const latitude = Number(input.latitude);
+        const longitude = Number(input.longitude);
+        const radius = Number(input.radius || 10);
+        const page = Number(input.page || 1);
+        const limit = Number(input.limit || 20);
+        const cuisine = input.cuisine;
+        const sortBy = input.sortBy || 'distance';
+        const hasValidSearchLocation = isValidCoordinates(latitude, longitude);
 
         const donatedOrders = await Order.find({
             donationAmount: { $gt: 0 },
             status: { $ne: OrderStatus.CANCELLED },
         })
             .select('providerId items donationAmount')
-            .populate('items.foodId', 'title image')
+            .populate('items.foodId', 'title image productDescription finalPriceTag rating foodAvailability')
             .sort({ createdAt: -1 })
             .lean();
 
@@ -286,6 +311,11 @@ class ProviderService {
                     title: String(food?.title || 'Donated item'),
                     image: String(food?.image || ''),
                     quantity,
+                    productDescription: String(food?.productDescription || ''),
+                    price: Number(food?.finalPriceTag || 0),
+                    finalPriceTag: Number(food?.finalPriceTag || 0),
+                    rating: Number(food?.rating || 0),
+                    inStock: food?.foodAvailability !== false,
                 };
 
                 current.donatedFoodById.set(foodId, donatedFood);
@@ -317,9 +347,12 @@ class ProviderService {
             isActive: true,
             status: 'ACTIVE',
             verificationStatus: { $in: ['APPROVED', 'ACTIVE'] },
-            'location.lat': { $exists: true, $ne: null },
-            'location.lng': { $exists: true, $ne: null },
         };
+
+        if (hasValidSearchLocation) {
+            query['location.lat'] = { $exists: true, $ne: null };
+            query['location.lng'] = { $exists: true, $ne: null };
+        }
 
         if (cuisine) {
             const matchingCategories = await Category.find({
@@ -357,7 +390,11 @@ class ProviderService {
         const donatedFoodsWithDistance: DonatedFoodSpot[] = [];
 
         for (const provider of providers) {
-            if (typeof provider.location?.lat !== 'number' || typeof provider.location?.lng !== 'number') {
+            const hasProviderLocation =
+                typeof provider.location?.lat === 'number' &&
+                typeof provider.location?.lng === 'number';
+
+            if (hasValidSearchLocation && !hasProviderLocation) {
                 continue;
             }
 
@@ -365,12 +402,14 @@ class ProviderService {
             const donation = donationByProvider.get(providerId);
             if (!donation) continue;
 
-            const distance = calculateDistance(
-                { lat: latitude, lng: longitude },
-                { lat: provider.location.lat, lng: provider.location.lng }
-            );
+            const distance = hasValidSearchLocation && hasProviderLocation
+                ? calculateDistance(
+                    { lat: latitude, lng: longitude },
+                    { lat: provider.location!.lat!, lng: provider.location!.lng! }
+                )
+                : 0;
 
-            if (distance > radius) continue;
+            if (hasValidSearchLocation && distance > radius) continue;
 
             const donatedFoods = donation.donatedFoods;
 
@@ -378,8 +417,8 @@ class ProviderService {
                 providerId,
                 restaurantName: provider.restaurantName,
                 location: {
-                    lat: provider.location.lat,
-                    lng: provider.location.lng,
+                    lat: provider.location?.lat || 0,
+                    lng: provider.location?.lng || 0,
                 },
                 distance,
                 cuisine: provider.cuisine || [],
@@ -401,21 +440,42 @@ class ProviderService {
             });
         }
 
+        const donatedFoodCards: DonatedFoodCard[] = donatedFoodsWithDistance.flatMap((provider) =>
+            provider.donatedFoods.map((food) => ({
+                ...food,
+                id: food.foodId,
+                name: food.title,
+                donatedQuantity: food.quantity,
+                providerId: provider.providerId,
+                providerName: provider.restaurantName,
+                restaurantName: provider.restaurantName,
+                restaurantAddress: provider.restaurantAddress,
+                city: provider.city,
+                state: provider.state,
+                distance: provider.distance,
+                cuisine: provider.cuisine,
+                totalDonationAmount: provider.totalDonationAmount,
+                donationOrderCount: provider.donationOrderCount,
+                providerProfile: provider.profile,
+            }))
+        );
+
         if (sortBy === 'distance') {
-            donatedFoodsWithDistance.sort((a, b) => a.distance - b.distance);
+            donatedFoodCards.sort((a, b) => a.distance - b.distance);
         } else if (sortBy === 'name') {
-            donatedFoodsWithDistance.sort((a, b) => a.restaurantName.localeCompare(b.restaurantName));
+            donatedFoodCards.sort((a, b) => a.name.localeCompare(b.name));
         } else if (sortBy === 'rating') {
-            donatedFoodsWithDistance.sort((a, b) => b.totalDonationAmount - a.totalDonationAmount);
+            donatedFoodCards.sort((a, b) => b.rating - a.rating);
         }
 
-        const total = donatedFoodsWithDistance.length;
+        const total = donatedFoodCards.length;
         const totalPages = Math.ceil(total / limit);
         const skip = (page - 1) * limit;
-        const paginatedDonatedFoods = donatedFoodsWithDistance.slice(skip, skip + limit);
+        const paginatedDonatedFoods = donatedFoodCards.slice(skip, skip + limit);
 
         return {
             donatedFoods: paginatedDonatedFoods,
+            donatedFoodSpots: donatedFoodsWithDistance,
             pagination: {
                 total,
                 page,
