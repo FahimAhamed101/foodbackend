@@ -59,6 +59,10 @@ interface DonatedFoodCard extends DonatedFoodSummary {
     providerId: string;
     providerName: string;
     restaurantName: string;
+    location: {
+        lat: number;
+        lng: number;
+    };
     restaurantAddress: string;
     city: string;
     state: string;
@@ -67,6 +71,8 @@ interface DonatedFoodCard extends DonatedFoodSummary {
     totalDonationAmount: number;
     donationOrderCount: number;
     providerProfile: string;
+    profile: string;
+    availableFoods: number;
 }
 
 interface DonationAccumulator {
@@ -452,6 +458,7 @@ class ProviderService {
                 providerId: provider.providerId,
                 providerName: provider.restaurantName,
                 restaurantName: provider.restaurantName,
+                location: provider.location,
                 restaurantAddress: provider.restaurantAddress,
                 city: provider.city,
                 state: provider.state,
@@ -460,6 +467,8 @@ class ProviderService {
                 totalDonationAmount: provider.totalDonationAmount,
                 donationOrderCount: provider.donationOrderCount,
                 providerProfile: provider.profile,
+                profile: provider.profile,
+                availableFoods: provider.availableFoods || 0,
             }))
         );
 

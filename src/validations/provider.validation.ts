@@ -109,7 +109,66 @@ export const nearbyProvidersQuerySchema = z.object({
                 .positive()
                 .max(100, 'Limit cannot exceed 100')
                 .optional()
-                .default(20)
+                .default(100)
+        ),
+
+        cuisine: z
+            .string()
+            .optional(),
+
+        sortBy: sortBySchema
+    })
+});
+
+export const nearbyDonatedFoodsSchema = z.object({
+    body: z.object({
+        latitude: z.preprocess(
+            parseQueryNumber,
+            z
+                .number()
+                .min(-90, 'Latitude must be between -90 and 90')
+                .max(90, 'Latitude must be between -90 and 90')
+                .optional()
+        ),
+
+        longitude: z.preprocess(
+            parseQueryNumber,
+            z
+                .number()
+                .min(-180, 'Longitude must be between -180 and 180')
+                .max(180, 'Longitude must be between -180 and 180')
+                .optional()
+        ),
+
+        radius: z.preprocess(
+            parseQueryNumber,
+            z
+                .number()
+                .positive('Radius must be a positive number')
+                .max(100, 'Radius cannot exceed 100 km')
+                .optional()
+                .default(10)
+        ),
+
+        page: z.preprocess(
+            parseQueryNumber,
+            z
+                .number()
+                .int()
+                .positive()
+                .optional()
+                .default(1)
+        ),
+
+        limit: z.preprocess(
+            parseQueryNumber,
+            z
+                .number()
+                .int()
+                .positive()
+                .max(100, 'Limit cannot exceed 100')
+                .optional()
+                .default(100)
         ),
 
         cuisine: z

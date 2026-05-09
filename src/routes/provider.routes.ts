@@ -7,7 +7,7 @@ import { requireApproval } from '../middlewares/requireApproval';
 import { validate } from '../middlewares/validate';
 import providerProfileController from '../controllers/providerProfile.controller';
 import { updateProfileSchema } from '../validations/providerProfile.validation';
-import { nearbyProvidersQuerySchema, nearbyProvidersSchema } from '../validations/provider.validation';
+import { nearbyDonatedFoodsSchema, nearbyProvidersQuerySchema, nearbyProvidersSchema } from '../validations/provider.validation';
 
 import { upload } from '../middlewares/upload';
 
@@ -25,7 +25,7 @@ const providerLimiter = rateLimit({
 
 // Public route - no authentication required for searching nearby providers
 router.post('/nearby', validate(nearbyProvidersSchema), providerController.getNearbyProviders);
-router.post('/donated-foods/nearby', validate(nearbyProvidersSchema), providerController.getNearbyDonatedFoods);
+router.post('/donated-foods/nearby', validate(nearbyDonatedFoodsSchema), providerController.getNearbyDonatedFoods);
 router.get('/donated-foods/nearby', validate(nearbyProvidersQuerySchema), providerController.getNearbyDonatedFoods);
 
 // Protected routes - require authentication

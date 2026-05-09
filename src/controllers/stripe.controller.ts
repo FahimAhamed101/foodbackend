@@ -13,7 +13,7 @@ class StripeController {
      */
     createPaymentIntent = catchAsync(async (req: AuthRequest, res: Response) => {
         const customerId = req.user!.userId;
-        const { providerId, items, donationAmount } = req.body;
+        const { providerId, items, donationAmount, isDonation } = req.body;
 
         if (!providerId || !items || !Array.isArray(items) || items.length === 0) {
             throw new AppError('providerId and items are required', 400, 'INVALID_REQUEST');
@@ -31,6 +31,7 @@ class StripeController {
             providerId,
             items,
             donationAmount,
+            isDonation,
         });
 
         res.status(200).json({
