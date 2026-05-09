@@ -14,6 +14,7 @@ class OrderService {
         paymentMethod: string;
         logisticsType: string;
         donationAmount?: number;
+        isDonation?: boolean;
     }) {
         const donationAmount = this.roundMoney(orderData.donationAmount || 0);
 
@@ -79,6 +80,7 @@ class OrderService {
             platformFee: parseFloat(totalPlatformFee.toFixed(2)),
             stateTax: parseFloat(stateTax.toFixed(2)),
             donationAmount,
+            isDonation: !!orderData.isDonation,
             totalPrice: parseFloat(totalPrice.toFixed(2)),
             state: customerState,
             status: OrderStatus.PENDING,

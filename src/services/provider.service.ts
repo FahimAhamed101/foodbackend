@@ -246,7 +246,10 @@ class ProviderService {
         const hasValidSearchLocation = isValidCoordinates(latitude, longitude);
 
         const donatedOrders = await Order.find({
-            donationAmount: { $gt: 0 },
+            $or: [
+                { isDonation: true },
+                { donationAmount: { $gt: 0 } }
+            ],
             status: { $ne: OrderStatus.CANCELLED },
         })
             .select('providerId items donationAmount')

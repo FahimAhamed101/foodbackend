@@ -32,6 +32,7 @@ export interface IOrder extends Document {
     stateTax: number;
     donationAmount: number;
     totalPrice: number;
+    isDonation: boolean;
     vendorAmount: number;
     status: OrderStatus;
     paymentStatus: PaymentStatus;
@@ -86,6 +87,11 @@ const orderSchema = new Schema<IOrder>(
         stateTax: {
             type: Number,
             default: 0,
+        },
+        isDonation: {
+            type: Boolean,
+            default: false,
+            index: true,
         },
         donationAmount: {
             type: Number,

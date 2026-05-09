@@ -27,6 +27,7 @@ export const createOrderSchema = z.object({
         paymentMethod: z.string().min(1),
         logisticsType: z.string().min(1),
         donationAmount: donationAmountSchema,
+        isDonation: z.boolean().optional(),
     }),
 });
 

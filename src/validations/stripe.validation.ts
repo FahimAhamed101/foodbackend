@@ -17,6 +17,7 @@ export const createPaymentIntentSchema = z.object({
             })
         ).min(1, 'At least one item is required'),
         donationAmount: donationAmountSchema,
+        isDonation: z.boolean().optional(),
     }),
 });
 

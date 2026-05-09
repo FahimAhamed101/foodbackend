@@ -18,6 +18,7 @@ interface CreatePaymentIntentData {
     providerId: string;
     items: { foodId: string; quantity: number }[];
     donationAmount?: number;
+    isDonation?: boolean;
 }
 
 interface PriceBreakdown {
@@ -183,6 +184,7 @@ class StripeService {
                 donationAmount: breakdown.donationAmount.toString(),
                 vendorAmount: breakdown.vendorAmount.toString(),
                 items: JSON.stringify(items),
+                isDonation: data.isDonation ? 'true' : 'false',
             },
             description: `Order from EMDR - Provider: ${providerId}`,
         });
@@ -208,6 +210,7 @@ class StripeService {
         const state = metadata.state;
         const items = JSON.parse(metadata.items);
         const donationAmount = this.parseDonationAmount(metadata.donationAmount);
+        const isDonation = metadata.isDonation === 'true';
 
         // Recalculate to ensure integrity (prevent metadata tampering)
         const breakdown = await this.calculatePriceBreakdown(customerId, items, donationAmount);
@@ -240,6 +243,7 @@ class StripeService {
             platformFee: breakdown.platformFee,
             stateTax: breakdown.stateTax,
             donationAmount: breakdown.donationAmount,
+            isDonation: isDonation,
             totalPrice: breakdown.total,
             vendorAmount: breakdown.vendorAmount,
             state,
