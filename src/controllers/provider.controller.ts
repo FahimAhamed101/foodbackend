@@ -38,10 +38,11 @@ class ProviderController {
 
     /**
      * Get nearby restaurants with donated checkout food.
-     * POST /api/v1/provider/donated-foods/nearby
+     * GET|POST /api/v1/provider/donated-foods/nearby
      */
     getNearbyDonatedFoods = catchAsync(async (req: Request, res: Response) => {
-        const { latitude, longitude, radius, page, limit, cuisine, sortBy } = req.body;
+        const input = (req.method === 'GET' ? req.query : req.body) as any;
+        const { latitude, longitude, radius, page, limit, cuisine, sortBy } = input;
 
         const result = await providerService.getNearbyDonatedFoods({
             latitude,
